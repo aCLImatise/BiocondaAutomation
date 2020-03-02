@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  schedule:
+    # Run on the first of every month
+    - cron:  '0 0 1 * *'
+
+jobs:
+  build:
+    container: continuumio/miniconda
+    runs-on: ubuntu-latest
+    steps:
+    - name: List all bioconda packages
+      run: conda search -c bioconda
