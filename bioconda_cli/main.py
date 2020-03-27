@@ -6,12 +6,14 @@ import os
 import pathlib
 import subprocess
 
+
 def get_conda_binaries():
     conda_bin = os.environ.get('CONDA_EXE')
     if conda_bin is None:
         raise Exception('You must be in a conda environment to run this')
 
     return set(pathlib.Path(conda_bin).parent.iterdir())
+
 
 @click.group()
 def main():
@@ -37,9 +39,11 @@ def list_help(out, environment):
     run_command('install', '--file', str(environment))
     final_bin = get_conda_binaries()
 
-    # Output the new binaries installed
+    # Output the help text to the directory
     for bin in final_bin - initial_bin:
-        if resubprocess.run([bin, '--help'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        with (out / bin.name).with_suffix('.txt').open('w') as fp:
+            subprocess.run([bin, '--help'], stdout=fp, stderr=fp, check=False)
+
 
 if __name__ == '__main__':
     main()

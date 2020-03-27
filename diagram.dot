@@ -1,0 +1,21 @@
+digraph Acclimatise {
+    node[shape=rect]
+
+    start -> conda_bin [label="Weekly updates"]
+    conda_bin -> acclimatise
+    //conda_bin -> help_dump
+    //help_dump -> acclimatise
+    acclimatise -> python_dump
+    python_dump -> wdl [label="python-wdlgen"]
+    python_dump -> cwl [label="python-cwlgen"]
+    python_dump -> python_dump [label="Manual edits"]
+
+
+    start[label="Start"]
+    conda_bin[label="Environment containing every bioconda package (not stored)"]
+    //help_dump[label="Repository of help text", style=bold]
+    acclimatise[label="Acclimatise: help text parser"]
+    python_dump[label="Dump of command line description in JSON format", style=bold]
+    wdl[label="WDL tool definitions", style=bold]
+    cwl[label="CWL tool definitions", style=bold]
+}

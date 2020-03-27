@@ -7,7 +7,8 @@ setup(
     install_requires=[
         'click',
         'conda',
-        'pyyaml'
+        'pyyaml',
+        
     ],
     entry_points={
         "console_scripts": [
