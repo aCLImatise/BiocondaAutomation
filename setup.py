@@ -6,7 +6,6 @@ setup(
     version='0.0.1',
     install_requires=[
         'click',
-        'conda',
         'acclimatise'
     ],
     entry_points={
