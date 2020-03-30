@@ -5,7 +5,6 @@ import os
 import pathlib
 from acclimatise import best_cmd
 from acclimatise.yaml import yaml
-import yaml
 
 
 def get_conda_binaries():
