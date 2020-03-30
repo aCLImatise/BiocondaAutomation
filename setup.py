@@ -6,7 +6,8 @@ setup(
     version='0.0.1',
     install_requires=[
         'click',
-        'acclimatise'
+        'acclimatise',
+        "ruamel.yaml==0.16.5",
     ],
     entry_points={
         "console_scripts": [
