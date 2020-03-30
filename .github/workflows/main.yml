@@ -16,7 +16,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install python code
-        run: pip install -e .
+        run:
+          - pip install -U pip setuptools wheel
+          - pip install -e .
 
       - uses: webfactory/ssh-agent@v0.2.0
         with:
