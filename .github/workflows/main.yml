@@ -21,7 +21,7 @@ jobs:
           python-version: 3.8
 
       - name: Install python code
-        run: pip install -e .
+        run: python3 -m pip install -e .
 
       - uses: webfactory/ssh-agent@v0.2.0
         with:
