@@ -39,7 +39,7 @@ def env_dump():
         'name': 'all_bioconda',
         'channels': ['bioconda'],
         'dependencies': packages
-    }), sys.stdout
+    }, sys.stdout)
 
 
 @main.command(help='Store all the "--help" outputs in the provided directory')
