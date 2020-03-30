@@ -6,16 +6,16 @@ digraph Acclimatise {
     //conda_bin -> help_dump
     //help_dump -> acclimatise
     acclimatise -> python_dump
-    python_dump -> wdl [label="python-wdlgen"]
-    python_dump -> cwl [label="python-cwlgen"]
-    python_dump -> python_dump [label="Manual edits"]
-
+    curated -> wdl [label="python-wdlgen"]
+    curated -> cwl [label="python-cwlgen"]
+    python_dump -> curated [label="Manual edits"]
 
     start[label="Start"]
     conda_bin[label="Environment containing every bioconda package (not stored)"]
     //help_dump[label="Repository of help text", style=bold]
     acclimatise[label="Acclimatise: help text parser"]
     python_dump[label="Dump of command line description in JSON format", style=bold]
+    curated[label="Branch of above tool description dump, with manually curated git patches", style=bold]
     wdl[label="WDL tool definitions", style=bold]
     cwl[label="CWL tool definitions", style=bold]
 }

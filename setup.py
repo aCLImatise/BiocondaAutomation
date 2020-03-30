@@ -7,8 +7,7 @@ setup(
     install_requires=[
         'click',
         'conda',
-        'pyyaml',
-        
+        'acclimatise'
     ],
     entry_points={
         "console_scripts": [

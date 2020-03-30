@@ -1,18 +1,19 @@
 import click
 from conda.cli.python_api import run_command
 import json
-import yaml
 import os
 import pathlib
-import subprocess
+from acclimatise import best_cmd
+from acclimatise.yaml import yaml
+import yaml
 
 
 def get_conda_binaries():
-    conda_bin = os.environ.get('CONDA_EXE')
-    if conda_bin is None:
+    conda_env = os.environ.get('CONDA_PREFIX')
+    if conda_env is None:
         raise Exception('You must be in a conda environment to run this')
 
-    return set(pathlib.Path(conda_bin).parent.iterdir())
+    return set((pathlib.Path(conda_env) / 'bin').iterdir())
 
 
 @click.group()
@@ -21,8 +22,18 @@ def main():
 
 
 @main.command()
+def list_bin():
+    print('\n'.join([str(x) for x in get_conda_binaries()]))
+
+
+@main.command()
 def env_dump():
-    stdout, stderr, retcode = run_command('search', 'bwa', '-c', 'bioconda', '--json')
+    stdout, stderr, retcode = run_command(
+        'search',
+        '--override-channels',  # Don't use system default channels
+        '--channel', 'bioconda',  # Only use bioconda
+        '--json'  # We need JSON so we can parse it
+    )
     packages = list(json.loads(stdout).keys())
     print(yaml.dump({
         'name': 'all_bioconda',
@@ -33,16 +44,18 @@ def env_dump():
 
 @main.command(help='Store all the "--help" outputs in the provided directory')
 @click.argument('out', type=click.Path(file_okay=False, dir_okay=True, exists=True))
-@click.argument('environment', type=click.Path(file_okay=True, dir_okay=False, exists=True))
-def list_help(out, environment):
+@click.argument('environment',
+                type=click.Path(file_okay=True, dir_okay=False, exists=True))
+def acclimatise(out, environment):
     initial_bin = get_conda_binaries()
     run_command('install', '--file', str(environment))
     final_bin = get_conda_binaries()
 
     # Output the help text to the directory
     for bin in final_bin - initial_bin:
-        with (out / bin.name).with_suffix('.txt').open('w') as fp:
-            subprocess.run([bin, '--help'], stdout=fp, stderr=fp, check=False)
+        cmd = best_cmd([str(bin)])
+        with (out / bin.name).with_suffix('.yml').open('w') as fp:
+            yaml.dump(cmd, fp)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  # Run on the first of every month
+  schedule:
+    - cron:  '0 0 1 * *'
+
+  # Also run whenever we push
+  push:
+
+jobs:
+  build:
+    container: continuumio/miniconda
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install python code
+        run: pip install -e .
+
+      - uses: webfactory/ssh-agent@v0.2.0
+        with:
+          ssh-private-key: ${{ secrets.ToolDefinitionDeploy }}
+
+      - name: Install all bioconda packages
+        run: find_cli env_dump > dump.env
+
+      - uses: actions/checkout@v2
+        name: Checkout the tool repository
+        with:
+          repository: 'acclimatise/ToolDefinitions'
+
+      - name: Acclimatise everything
+        run: find_cli acclimatise ToolDefinitions dump.env
