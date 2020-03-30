@@ -7,11 +7,11 @@ setup(
     install_requires=[
         'click',
         'acclimatise',
-        "ruamel.yaml==0.16.5",
+        'ruamel.yaml==0.16.5',
     ],
     entry_points={
         "console_scripts": [
-            "find_cli = bioconda_cli.main:main",
+            'find_cli = bioconda_cli.main:main',
             # more script entry points ...
         ],
     }
