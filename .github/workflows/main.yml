@@ -25,10 +25,7 @@ jobs:
           ssh-private-key: ${{ secrets.ToolDefinitionDeploy }}
 
       - name: List all bioconda packages
-        run: |
-          env
-          find_cli env-dump > dump.env
-        shell: bash
+        run: find_cli env-dump > dump.env
 
       - uses: actions/checkout@v2
         name: Checkout the tool repository
@@ -38,3 +35,4 @@ jobs:
 
       - name: Acclimatise everything
         run: find_cli acclimatise ToolDefinitions dump.env
+        shell: bash
