@@ -39,3 +39,11 @@ jobs:
           source /root/.bashrc
           find_cli acclimatise ToolDefinitions packages.txt
         shell: bash
+
+      - name: Cache conda environment
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conda
+        with:
+          path: /opt/conda
+          key: always-cache
