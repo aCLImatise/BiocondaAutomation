@@ -25,7 +25,7 @@ jobs:
           ssh-private-key: ${{ secrets.ToolDefinitionDeploy }}
 
       - name: List all bioconda packages
-        run: find_cli --test env-dump > packages.txt
+        run: find_cli env-dump --test > packages.txt
 
       - uses: actions/checkout@v2
         name: Checkout the tool repository
