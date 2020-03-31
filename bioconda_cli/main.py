@@ -68,7 +68,7 @@ def acclimatise(out, environment):
     # Output the help text to the directory
     for bin in final_bin - initial_bin:
         cmd = best_cmd([str(bin)])
-        with (out / bin.name).with_suffix('.yml').open('w') as fp:
+        with (pathlib.Path(out) / bin.name).with_suffix('.yml').open('w') as fp:
             yaml.dump(cmd, fp)
 
 
