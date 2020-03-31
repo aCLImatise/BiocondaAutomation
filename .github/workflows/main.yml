@@ -24,12 +24,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.ToolDefinitionDeploy }}
 
-      - name: Install all bioconda packages
+      - name: List all bioconda packages
         run: find_cli env-dump > dump.env
 
       - uses: actions/checkout@v2
         name: Checkout the tool repository
         with:
+          path: ToolDefinitions
           repository: 'acclimatise/ToolDefinitions'
 
       - name: Acclimatise everything
