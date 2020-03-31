@@ -49,7 +49,11 @@ def env_dump():
                 type=click.Path(file_okay=True, dir_okay=False, exists=True))
 def acclimatise(out, environment):
     initial_bin = get_conda_binaries()
-    run_command('install', '--file', str(environment))
+    run_command(
+        'install',
+        '--channel', 'bioconda',
+        '--file', str(environment)
+    )
     final_bin = get_conda_binaries()
 
     # Output the help text to the directory
