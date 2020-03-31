@@ -33,10 +33,6 @@ jobs:
           path: ToolDefinitions
           repository: 'acclimatise/ToolDefinitions'
 
-      - name: Test env
-        run: env
-        shell: bash
-
       - name: Acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
