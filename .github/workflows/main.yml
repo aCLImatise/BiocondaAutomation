@@ -51,7 +51,12 @@ jobs:
           git config --local user.name "GitHub Action"
           git add -A
           git commit -m "Update"
-          git push origin master
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          directory: ToolDefinitions
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache conda environment
         uses: actions/cache@v1
