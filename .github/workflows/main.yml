@@ -34,8 +34,9 @@ jobs:
 #          repository: 'acclimatise/ToolDefinitions'
       - name: Checkout the tool repository
         run: |
-          git config --global --add url."https://${{ secrets.GITHUB_SECRET }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-          git config --global --add url."https://${{ secrets.GITHUB_SECRET }}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
+          ssh-keyscan -t rsa github.com
+#          git config --global --add url."https://${{ secrets.GITHUB_SECRET }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+#          git config --global --add url."https://${{ secrets.GITHUB_SECRET }}:x-oauth-basic@github.com/".insteadOf "git@github.com:"
           git clone git@github.com:acclimatise/ToolDefinitions.git
 
       - name: Acclimatise everything
