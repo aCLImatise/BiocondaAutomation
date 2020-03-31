@@ -40,6 +40,14 @@ jobs:
           find_cli acclimatise ToolDefinitions packages.txt
         shell: bash
 
+      - name: Commit files
+        run: |
+          cd ToolDefinitions
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m "Update" -a
+          git push origin master
+
       - name: Cache conda environment
         uses: actions/cache@v1
         env:

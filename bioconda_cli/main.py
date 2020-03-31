@@ -31,9 +31,9 @@ def list_bin():
 def env_dump(test=False):
     if test:
         packages = [
-            'samtools',
+            # 'samtools',
             'bwa',
-            'pisces'
+            # 'pisces'
         ]
     else:
         stdout, stderr, retcode = run_command(
