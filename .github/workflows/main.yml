@@ -45,7 +45,8 @@ jobs:
           cd ToolDefinitions
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -m "Update" -a
+          git add -A
+          git commit -m "Update"
           git push origin master
 
       - name: Cache conda environment
