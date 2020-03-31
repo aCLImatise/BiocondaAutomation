@@ -27,21 +27,24 @@ def list_bin():
 
 
 @main.command()
-@click.option('--limit', type=int)
-def env_dump(limit=-1):
-    stdout, stderr, retcode = run_command(
-        'search',
-        '--override-channels',  # Don't use system default channels
-        '--channel', 'bioconda',  # Only use bioconda
-        '--json'  # We need JSON so we can parse it
-    )
-    packages = [package + '\n' for package in json.loads(stdout).keys()]
+@click.option('--test', is_flag=True)
+def env_dump(test=False):
+    if test:
+        packages = [
+            'samtools',
+            'bwa',
+            'pisces'
+        ]
+    else:
+        stdout, stderr, retcode = run_command(
+            'search',
+            '--override-channels',  # Don't use system default channels
+            '--channel', 'bioconda',  # Only use bioconda
+            '--json'  # We need JSON so we can parse it
+        )
+        packages = json.loads(stdout).keys()
 
-    # Cut down the list of packages for testing purposes
-    if limit != -1:
-        packages = packages[:limit]
-
-    sys.stdout.writelines(packages)
+    sys.stdout.writelines([package + '\n' for package in packages])
     # yaml.dump({
     #     'name': 'all_bioconda',
     #     'channels': ['bioconda'],
