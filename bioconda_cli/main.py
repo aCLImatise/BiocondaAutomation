@@ -72,7 +72,8 @@ def acclimatise(out, environment):
             with (pathlib.Path(out) / bin.name).with_suffix('.yml').open('w') as fp:
                 yaml.dump(cmd, fp)
         except Exception as e:
-            print('Command {} failed with error {} using the output'.format(bin, e)
+            print('Command {} failed with error {} using the output'.format(bin, e))
+            sys.exit(1)
 
 
 
