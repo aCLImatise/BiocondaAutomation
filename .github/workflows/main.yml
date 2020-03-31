@@ -33,6 +33,10 @@ jobs:
           path: ToolDefinitions
           repository: 'acclimatise/ToolDefinitions'
 
+      - name: Test env
+        run: env
+        shell: bash
+
       - name: Acclimatise everything
         run: find_cli acclimatise ToolDefinitions dump.env
         shell: bash
