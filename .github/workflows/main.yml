@@ -36,6 +36,6 @@ jobs:
       - name: Acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
-          source ~/.bashrc
+          source /root/.bashrc
           find_cli acclimatise ToolDefinitions dump.env
         shell: bash
