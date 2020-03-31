@@ -18,7 +18,7 @@ jobs:
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
-          pip install -U -e .
+          pip install -U .
 
       - uses: webfactory/ssh-agent@v0.2.0
         with:
