@@ -27,7 +27,8 @@ def list_bin():
 
 
 @main.command()
-def env_dump():
+@click.option('--limit', type=int)
+def env_dump(limit=-1):
     stdout, stderr, retcode = run_command(
         'search',
         '--override-channels',  # Don't use system default channels
@@ -35,6 +36,11 @@ def env_dump():
         '--json'  # We need JSON so we can parse it
     )
     packages = [package + '\n' for package in json.loads(stdout).keys()]
+
+    # Cut down the list of packages for testing purposes
+    if limit != -1:
+        packages = packages[:limit]
+
     sys.stdout.writelines(packages)
     # yaml.dump({
     #     'name': 'all_bioconda',
