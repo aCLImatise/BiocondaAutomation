@@ -27,15 +27,15 @@ jobs:
       - name: List all bioconda packages
         run: find_cli env-dump --test > packages.txt
 
-#      - uses: actions/checkout@v2
-#        name: Checkout the tool repository
-#        with:
-#          path: ToolDefinitions
-#          repository: 'acclimatise/ToolDefinitions'
-      - name: Checkout the tool repository
-        run: |
-          ssh-keyscan -t rsa github.com
-          git clone git@github.com:acclimatise/ToolDefinitions.git
+      - uses: actions/checkout@v2
+        name: Checkout the tool repository
+        with:
+          path: ToolDefinitions
+          repository: 'acclimatise/ToolDefinitions'
+
+#      - name: Checkout the tool repository
+#        run: |
+#          git clone git@github.com:acclimatise/ToolDefinitions.git
 
       - name: Acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
