@@ -35,11 +35,12 @@ def env_dump():
         '--json'  # We need JSON so we can parse it
     )
     packages = list(json.loads(stdout).keys())
-    yaml.dump({
-        'name': 'all_bioconda',
-        'channels': ['bioconda'],
-        'dependencies': packages
-    }, sys.stdout)
+    sys.stdout.writelines(packages)
+    # yaml.dump({
+    #     'name': 'all_bioconda',
+    #     'channels': ['bioconda'],
+    #     'dependencies': packages
+    # }, sys.stdout)
 
 
 @main.command(help='Store all the "--help" outputs in the provided directory')
