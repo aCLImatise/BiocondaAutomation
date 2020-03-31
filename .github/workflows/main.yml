@@ -38,5 +38,8 @@ jobs:
         shell: bash
 
       - name: Acclimatise everything
-        run: find_cli acclimatise ToolDefinitions dump.env
+        # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
+        run: |
+          source ~/.bashrc
+          find_cli acclimatise ToolDefinitions dump.env
         shell: bash
