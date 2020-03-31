@@ -34,7 +34,7 @@ def env_dump():
         '--channel', 'bioconda',  # Only use bioconda
         '--json'  # We need JSON so we can parse it
     )
-    packages = list(json.loads(stdout).keys())
+    packages = [package + '\n' for package in json.loads(stdout).keys()]
     sys.stdout.writelines(packages)
     # yaml.dump({
     #     'name': 'all_bioconda',
