@@ -31,6 +31,7 @@ jobs:
         name: Checkout the tool repository
         with:
           path: ToolDefinitions
+          ref: master
           repository: 'acclimatise/ToolDefinitions'
 
 #      - name: Checkout the tool repository
