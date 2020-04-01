@@ -52,11 +52,12 @@ jobs:
           git config --local user.name "GitHub Action"
           git add -A
           git commit -m "Update"
+          git config --local --unset-all "http.https://github.com/.extraheader"
 
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
-          repository: acclimatise/ToolDefinitions
+          repository: acclimatise/ToolDefinitioning
           directory: ToolDefinitions
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
