@@ -3,7 +3,7 @@ from conda.cli.python_api import run_command
 import json
 import os
 import pathlib
-from acclimatise import best_cmd, explore_command
+from acclimatise import explore_command
 from acclimatise.yaml import yaml
 import sys
 
