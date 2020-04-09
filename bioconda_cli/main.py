@@ -3,7 +3,7 @@ from conda.cli.python_api import run_command
 import json
 import os
 import pathlib
-from acclimatise import best_cmd
+from acclimatise import best_cmd, explore_command
 from acclimatise.yaml import yaml
 import sys
 
@@ -68,7 +68,7 @@ def acclimatise(out, environment):
     # Output the help text to the directory
     for bin in final_bin - initial_bin:
         try:
-            cmd = best_cmd([str(bin)])
+            cmd = explore_command([str(bin)])
             with (pathlib.Path(out) / bin.name).with_suffix('.yml').open('w') as fp:
                 yaml.dump(cmd, fp)
         except Exception as e:

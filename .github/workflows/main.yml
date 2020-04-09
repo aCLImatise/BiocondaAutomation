@@ -34,6 +34,9 @@ jobs:
           ref: master
           repository: acclimatise/ToolDefinitions
           ssh-key: ${{ secrets.ToolDefinitionDeploy }}
+
+      - name: Clear existing definitions
+        run: rm ToolDefinitions/*.yml
 #
 #      - name: Checkout the tool repository
 #        run: |
