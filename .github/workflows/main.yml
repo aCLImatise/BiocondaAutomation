@@ -42,7 +42,7 @@ jobs:
 #        run: |
 #          git clone "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git"
 
-      - name: Acclimatise everything
+      - name: Install packages and acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc

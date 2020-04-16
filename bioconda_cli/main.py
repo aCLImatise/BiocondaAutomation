@@ -8,12 +8,13 @@ from acclimatise.yaml import yaml
 import sys
 
 
-def get_conda_binaries():
-    conda_env = os.environ.get('CONDA_PREFIX')
-    if conda_env is None:
-        raise Exception('You must be in a conda environment to run this')
+def get_conda_binaries(env: str = None):
+    if not env:
+        env = os.environ.get('CONDA_PREFIX')
+        if env is None:
+            raise Exception('You must be in a conda environment to run this')
 
-    return set((pathlib.Path(conda_env) / 'bin').iterdir())
+    return set((pathlib.Path(env) / 'bin').iterdir())
 
 
 @click.group()
@@ -57,13 +58,15 @@ def env_dump(test=False):
 @click.argument('environment',
                 type=click.Path(file_okay=True, dir_okay=False, exists=True))
 def acclimatise(out, environment):
-    initial_bin = get_conda_binaries()
+    conda_env = os.environ.get('CONDA_PREFIX')
+    initial_bin = get_conda_binaries(conda_env)
     run_command(
         'install',
+        '--prefix', conda_env,
         '--channel', 'bioconda',
         '--file', str(environment)
     )
-    final_bin = get_conda_binaries()
+    final_bin = get_conda_binaries(conda_env)
 
     # Output the help text to the directory
     for bin in final_bin - initial_bin:
@@ -74,7 +77,6 @@ def acclimatise(out, environment):
         except Exception as e:
             print('Command {} failed with error {} using the output'.format(bin, e))
             sys.exit(1)
-
 
 
 if __name__ == '__main__':
