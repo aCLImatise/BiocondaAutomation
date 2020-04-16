@@ -75,7 +75,6 @@ def acclimatise(out, environment):
                 yaml.dump(cmd, fp)
         except Exception as e:
             print('Command {} failed with error {} using the output'.format(bin, e))
-            sys.exit(1)
 
 
 if __name__ == '__main__':
