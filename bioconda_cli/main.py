@@ -8,13 +8,13 @@ from acclimatise.yaml import yaml
 import sys
 
 
-def get_conda_binaries(env: str = None):
-    if not env:
-        env = os.environ.get('CONDA_PREFIX')
-        if env is None:
-            raise Exception('You must be in a conda environment to run this')
+def get_conda_binaries():
+    conda_env = os.environ.get('CONDA_PREFIX')
+    if conda_env is None:
+        raise Exception('You must be in a conda environment to run this')
 
-    return set((pathlib.Path(env) / 'bin').iterdir())
+    print('Conda env is {}'.format(conda_env))
+    return set((pathlib.Path(conda_env) / 'bin').iterdir())
 
 
 @click.group()
@@ -58,18 +58,17 @@ def env_dump(test=False):
 @click.argument('environment',
                 type=click.Path(file_okay=True, dir_okay=False, exists=True))
 def acclimatise(out, environment):
-    conda_env = os.environ.get('CONDA_PREFIX')
-    initial_bin = get_conda_binaries(conda_env)
+    initial_bin = get_conda_binaries()
     run_command(
         'install',
-        '--prefix', conda_env,
         '--channel', 'bioconda',
         '--file', str(environment)
     )
-    final_bin = get_conda_binaries(conda_env)
+    final_bin = get_conda_binaries()
 
     # Output the help text to the directory
     for bin in final_bin - initial_bin:
+        print('Exploring {}'.format(bin))
         try:
             cmd = explore_command([str(bin)])
             with (pathlib.Path(out) / bin.name).with_suffix('.yml').open('w') as fp:

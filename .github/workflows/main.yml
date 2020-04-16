@@ -46,6 +46,7 @@ jobs:
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc
+          env
           find_cli acclimatise ToolDefinitions packages.txt
         shell: bash
 
