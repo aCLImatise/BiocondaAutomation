@@ -14,7 +14,7 @@ from acclimatise.yaml import yaml
 
 
 def ctx_print(ctx, msg):
-    if ctx["VERBOSE"]:
+    if ctx.obj["VERBOSE"]:
         print(msg)
 
 
@@ -25,7 +25,7 @@ def log_around(msg: str, ctx: dict = {}):
     "Running long process... done"
     """
     # Skip this unless we're in verbose mode
-    if not ctx.get("VERBOSE"):
+    if not ctx.obj.get("VERBOSE"):
         return
 
     # Store the stdout and stderr to avoid clogging up the logs
@@ -54,7 +54,7 @@ def get_conda_binaries():
 @click.option("--verbose", is_flag=True)
 @click.pass_context
 def main(ctx, verbose):
-    ctx["VERBOSE"] = verbose
+    ctx.obj["VERBOSE"] = verbose
 
 
 @main.command()
