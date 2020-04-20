@@ -3,7 +3,7 @@ name: CI
 on:
   # Run on the first of every month
   schedule:
-    - cron:  '0 0 1 * *'
+    - cron: "0 0 1 * *"
 
   # Also run whenever we push
   push:
@@ -18,7 +18,9 @@ jobs:
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
-          pip install -U .
+          pip install -U .[dev]
+
+      - uses: pre-commit/action@v1.0.1
 
       - uses: webfactory/ssh-agent@v0.2.0
         with:
@@ -37,10 +39,10 @@ jobs:
 
       - name: Clear existing definitions
         run: rm ToolDefinitions/*.yml
-#
-#      - name: Checkout the tool repository
-#        run: |
-#          git clone "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+      #
+      #      - name: Checkout the tool repository
+      #        run: |
+      #          git clone "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git"
 
       - name: Install packages and acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
@@ -59,13 +61,13 @@ jobs:
           git config --local --unset-all "http.https://github.com/.extraheader"
           git push origin master
 
-#      - name: Push changes
-#        uses: ad-m/github-push-action@master
-#        with:
-#          repository: acclimatise/ToolDefinitioning
-#          directory: ToolDefinitions
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#
+      #      - name: Push changes
+      #        uses: ad-m/github-push-action@master
+      #        with:
+      #          repository: acclimatise/ToolDefinitioning
+      #          directory: ToolDefinitions
+      #          github_token: ${{ secrets.GITHUB_TOKEN }}
+      #
       - name: Cache conda environment
         uses: actions/cache@v1
         env:
