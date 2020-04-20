@@ -11,9 +11,9 @@ repos:
           - "--use-parentheses"
           - "--line-width=88"
           - "--project"
-          - "acclimatise"
+          - "bioconda_cli"
           - "--thirdparty"
-          - "pyparsing"
+          - "conda"
 
   - repo: https://github.com/psf/black
     rev: stable
