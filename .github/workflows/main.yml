@@ -15,6 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Apt requirements
+        run: apt-get update && apt-get install build-essential
+
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
