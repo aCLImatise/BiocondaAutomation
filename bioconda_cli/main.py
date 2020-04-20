@@ -54,6 +54,7 @@ def get_conda_binaries():
 @click.option("--verbose", is_flag=True)
 @click.pass_context
 def main(ctx, verbose):
+    ctx.ensure_object(dict)
     ctx.obj["VERBOSE"] = verbose
 
 
