@@ -38,7 +38,7 @@ jobs:
           ssh-key: ${{ secrets.ToolDefinitionDeploy }}
 
       - name: Clear existing definitions
-        run: rm ToolDefinitions/*.yml
+        run: rm ToolDefinitions/*.yml || true
 
       - name: List all bioconda packages
         run: find_cli --verbose list-packages --test > packages.txt
