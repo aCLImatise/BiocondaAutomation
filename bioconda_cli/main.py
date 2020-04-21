@@ -112,6 +112,7 @@ def list_versions(ctx, package_file, last_spec=None):
             str(package_file),
             "--json",
             "--dry-run",
+            use_exception_handler=True,
         )
     except DryRunExit as e:
         stdout = e.stdout
