@@ -25,7 +25,7 @@ def log_around(msg: str, ctx: dict = {}):
     "Running long process... done"
     """
     # Skip this unless we're in verbose mode
-    if not ctx.obj.get("VERBOSE"):
+    if not ctx.get("VERBOSE"):
         return
 
     # Store the stdout and stderr to avoid clogging up the logs
@@ -98,16 +98,16 @@ def env_dump(ctx, test=False):
 )
 @click.pass_context
 def acclimatise(ctx, out, environment):
-    with log_around("Listing conda packages"):
+    with log_around("Listing conda packages", ctx.obj):
         initial_bin = get_conda_binaries()
 
-    with log_around("Installing conda packages"):
+    with log_around("Installing conda packages", ctx.obj):
         run_command("install", "--channel", "bioconda", "--file", str(environment))
     final_bin = get_conda_binaries()
 
     # Output the help text to the directory
     for bin in final_bin - initial_bin:
-        with log_around("Exploring {}".format(bin)):
+        with log_around("Exploring {}".format(bin), ctx.obj):
             try:
                 cmd = explore_command([str(bin)])
                 with (pathlib.Path(out) / bin.name).with_suffix(".yml").open("w") as fp:
