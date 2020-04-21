@@ -41,16 +41,21 @@ jobs:
         run: rm ToolDefinitions/*.yml || true
 
       - name: List all bioconda packages
-        run: find_cli --verbose list-packages --test > packages.txt
+        run: |
+          find_cli --verbose list-packages --test > packages.txt
+          cat packages.txt
 
       - name: Find the latest versions of said packages
-        run: find_cli --verbose list-versions packages.txt > ToolDefinitions/versions.txt
+        run: |
+          find_cli --verbose list-versions packages.txt > ToolDefinitions/versions.txt
+          cat ToolDefinitions/versions.txt
 
       - name: Install packages and acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc
-          find_cli --verbose install ToolDefinitions/versions.txt > binaries.txt
+          find_cli --verbose install ToolDefinitions/versions.txt > ToolDefinitions/binaries.txt
+          cat ToolDefinitions/binaries.txt
         shell: bash
 
       - name: Acclimatise everything
