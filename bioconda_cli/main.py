@@ -76,16 +76,18 @@ def list_bin():
 @click.pass_context
 def env_dump(ctx, test=False, last_spec=None):
     stdout, stderr, retcode = run_command(
-        *[
-            "search",
-            "--override-channels",  # Don't use system default channels
-            "--channel",
-            "bioconda",  # Only use bioconda
-            "--json",  # We need JSON so we can parse it
-        ]
-        + ["bwa"]
-        if test
-        else []
+        *(
+            [
+                "search",
+                "--override-channels",  # Don't use system default channels
+                "--channel",
+                "bioconda",  # Only use bioconda
+                "--json",  # We need JSON so we can parse it
+            ]
+            + ["bwa"]
+            if test
+            else []
+        )
     )
 
     # Get a set of packages at their latest versions in bioconda
