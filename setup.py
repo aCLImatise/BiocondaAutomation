@@ -4,7 +4,12 @@ setup(
     name="bioconda_find_cli",
     packages=find_packages(),
     version="0.0.1",
-    install_requires=["click", "acclimatise>=0.0.7", "ruamel.yaml==0.16.5",],
+    install_requires=[
+        "click",
+        "acclimatise>=0.0.7",
+        "ruamel.yaml==0.16.5",
+        "packaging",
+    ],
     extras_require={"dev": ["pytest", "pre-commit"],},
     entry_points={
         "console_scripts": [
