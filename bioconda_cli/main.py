@@ -26,6 +26,7 @@ def log_around(msg: str, ctx: dict = {}):
     """
     # Skip this unless we're in verbose mode
     if not ctx.get("VERBOSE"):
+        yield
         return
 
     # Store the stdout and stderr to avoid clogging up the logs
