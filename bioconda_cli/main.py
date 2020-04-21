@@ -85,9 +85,7 @@ def env_dump(ctx, test=False, last_spec=None):
                 "bioconda",  # Only use bioconda
                 "--json",  # We need JSON so we can parse it
             ]
-            + ["bwa"]
-            if test
-            else []
+            + (["bwa"] if test else [])
         )
     )
 
