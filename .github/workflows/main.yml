@@ -30,7 +30,7 @@ jobs:
           ssh-private-key: ${{ secrets.ToolDefinitionDeploy }}
 
       - name: List all bioconda packages
-        run: find_cli env-dump > packages.txt
+        run: find_cli --verbose env-dump > packages.txt
 
       - uses: actions/checkout@v2
         name: Checkout the tool repository
@@ -51,7 +51,7 @@ jobs:
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc
-          find_cli acclimatise ToolDefinitions packages.txt
+          find_cli --verbose acclimatise ToolDefinitions packages.txt
         shell: bash
 
       - name: Commit files
