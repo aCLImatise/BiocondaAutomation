@@ -138,11 +138,11 @@ def list_versions(ctx, package_file, last_spec=None):
 @click.argument("spec", type=click.Path(dir_okay=False))
 @click.pass_context
 def install(ctx, spec):
-    with log_around("Listing conda packages", ctx.obj):
-        initial_bin = get_conda_binaries()
+    initial_bin = get_conda_binaries()
 
     with log_around("Installing conda packages", ctx.obj):
         run_command("install", "--channel", "bioconda", "--file", str(spec))
+
     final_bin = get_conda_binaries()
 
     for new_bin in final_bin - initial_bin:
@@ -157,18 +157,18 @@ def acclimatise(ctx, out, bins):
     with open(bins) as bins_fp:
         # Output the help text to the directory
         for line in bins_fp:
-            line = pathlib.Path(line)
-            with log_around("Exploring {}".format(line), ctx.obj):
+            cmd = pathlib.Path(line.strip())
+            with log_around("Exploring {}".format(cmd), ctx.obj):
                 try:
-                    cmd = explore_command([str(line)])
-                    with (pathlib.Path(out) / line.name).with_suffix(".yml").open(
+                    cmd = explore_command([str(cmd)])
+                    with (pathlib.Path(out) / cmd.name).with_suffix(".yml").open(
                         "w"
                     ) as fp:
                         yaml.dump(cmd, fp)
                 except Exception as e:
                     print(
                         "Command {} failed with error {} using the output".format(
-                            line, e
+                            cmd, e
                         )
                     )
 
