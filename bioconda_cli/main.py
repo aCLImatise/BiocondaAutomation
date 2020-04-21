@@ -76,6 +76,7 @@ def list_bin():
 @click.pass_context
 def env_dump(ctx, test=False, last_spec=None):
     stdout, stderr, retcode = run_command(
+        "search",
         *(
             [
                 "search",
