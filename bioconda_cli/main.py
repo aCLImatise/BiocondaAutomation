@@ -106,9 +106,7 @@ def env_dump(ctx, test=False, last_spec=None):
 
 
 @main.command(help="Install a list of packages and list the new binaries")
-@click.argument(
-    "spec", type=click.Path(dir_okay=False), help="Path to a package file to install"
-)
+@click.argument("spec", type=click.Path(dir_okay=False))
 @click.pass_context
 def install(ctx, spec):
     with log_around("Listing conda packages", ctx.obj):
