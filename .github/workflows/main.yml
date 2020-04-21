@@ -29,9 +29,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.ToolDefinitionDeploy }}
 
-      - name: List all bioconda packages
-        run: find_cli --verbose env-dump > packages.txt
-
       - uses: actions/checkout@v2
         name: Checkout the tool repository
         with:
@@ -42,18 +39,22 @@ jobs:
 
       - name: Clear existing definitions
         run: rm ToolDefinitions/*.yml
-      #
-      #      - name: Checkout the tool repository
-      #        run: |
-      #          git clone "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+
+      - name: List all bioconda packages
+        run: find_cli --verbose list-packages --test > packages.txt
+
+      - name: Find the latest versions of said packages
+        run: find_cli --verbose list-versions packages.txt > ToolDefinitions/versions.txt
 
       - name: Install packages and acclimatise everything
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc
-          find_cli --verbose install packages.txt > binaries.txt
-          find_cli --verbose acclimatise binaries.txt ToolDefinitions
+          find_cli --verbose install ToolDefinitions/versions.txt > binaries.txt
         shell: bash
+
+      - name: Acclimatise everything
+        run: find_cli --verbose acclimatise binaries.txt ToolDefinitions
 
       - name: Commit files
         run: |
@@ -65,13 +66,6 @@ jobs:
           git config --local --unset-all "http.https://github.com/.extraheader"
           git push origin master
 
-      #      - name: Push changes
-      #        uses: ad-m/github-push-action@master
-      #        with:
-      #          repository: acclimatise/ToolDefinitioning
-      #          directory: ToolDefinitions
-      #          github_token: ${{ secrets.GITHUB_TOKEN }}
-      #
       - name: Cache conda environment
         uses: actions/cache@v1
         env:

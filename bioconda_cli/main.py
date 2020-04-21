@@ -65,16 +65,12 @@ def list_bin():
     print("\n".join([str(x) for x in get_conda_binaries()]))
 
 
-@main.command()
-@click.option("--test", is_flag=True)
+@main.command(help="Lists all the packages in bioconda")
 @click.option(
-    "--last-spec",
-    type=click.Path(dir_okay=False),
-    help="Path to a previous output from this command, to "
-    "ensure we only acclimatise new tool versions",
+    "--test", is_flag=True, help="Use a tiny subset of bioconda for testing purposes"
 )
 @click.pass_context
-def env_dump(ctx, test=False, last_spec=None):
+def list_packages(ctx, test=False):
     stdout, stderr, retcode = run_command(
         "search",
         *(
@@ -89,11 +85,33 @@ def env_dump(ctx, test=False, last_spec=None):
         )
     )
 
-    # Get a set of packages at their latest versions in bioconda
+    # The package names are keys to the output dict
+    for key in json.loads(stdout).keys():
+        print(key)
+
+
+@main.command(
+    help="Produces a file containing all the (system-compatible) versions of all the bioconda packages, "
+    "excluding those that haven't changed and don't need upgrading"
+)
+@click.argument("packages", type=click.Path(dir_okay=False, exists=True))
+@click.option(
+    "--last-spec",
+    type=click.Path(dir_okay=False),
+    help="Path to a previous output from this command, to "
+    "ensure we only acclimatise new tool versions",
+)
+@click.pass_context
+def list_versions(ctx, packages, last_spec=None):
+    stdout, stderr, retcode = run_command(
+        "install", "--channel", "bioconda", "--file", str(packages)
+    )
+
+    # Get a set of packages at their latest compatible versions in bioconda
     packages = set()
-    for key, results in json.loads(stdout).items():
-        latest_version = max(results, key=lambda x: version.parse(x["version"]))
-        packages.add("{}={}".format(key, latest_version["version"]))
+    installs = json.loads(stdout)["actions"]["LINK"]
+    for package in installs:
+        packages.add("{}={}".format(package["name"], package["version"]))
 
     # The previous spec file basically defines a set of versions *not* to use
     if last_spec is not None:
