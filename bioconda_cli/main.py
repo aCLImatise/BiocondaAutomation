@@ -33,14 +33,14 @@ def log_around(msg: str, ctx: dict = {}):
     # Store the stdout and stderr to avoid clogging up the logs
     err = io.StringIO()
     out = io.StringIO()
-    print(msg + "...", end="")
+    print(msg + "...", end="", file=sys.stderr)
     with redirect_stderr(err), redirect_stdout(out):
         yield
-    print("Done.")
+    print("Done.", file=sys.stderr)
 
     # Indent the stdout/stderr
     for line in chain(out.readlines(), err.readlines()):
-        print("\t" + line)
+        print("\t" + line, file=sys.stderr)
 
 
 def get_conda_binaries():
@@ -75,7 +75,6 @@ def list_packages(ctx, test=False):
         "search",
         *(
             [
-                "search",
                 "--override-channels",  # Don't use system default channels
                 "--channel",
                 "bioconda",  # Only use bioconda
