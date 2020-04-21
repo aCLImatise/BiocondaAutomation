@@ -59,7 +59,7 @@ jobs:
         shell: bash
 
       - name: Acclimatise everything
-        run: find_cli --verbose acclimatise binaries.txt ToolDefinitions
+        run: find_cli --verbose acclimatise ToolDefinitions/binaries.txt ToolDefinitions
 
       - name: Commit files
         run: |
