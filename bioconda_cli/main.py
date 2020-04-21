@@ -93,7 +93,7 @@ def list_packages(ctx, test=False):
     help="Produces a file containing all the (system-compatible) versions of all the bioconda packages, "
     "excluding those that haven't changed and don't need upgrading"
 )
-@click.argument("packages", type=click.Path(dir_okay=False, exists=True))
+@click.argument("package_file", type=click.Path(dir_okay=False, exists=True))
 @click.option(
     "--last-spec",
     type=click.Path(dir_okay=False),
@@ -101,9 +101,15 @@ def list_packages(ctx, test=False):
     "ensure we only acclimatise new tool versions",
 )
 @click.pass_context
-def list_versions(ctx, packages, last_spec=None):
+def list_versions(ctx, package_file, last_spec=None):
     stdout, stderr, retcode = run_command(
-        "install", "--channel", "bioconda", "--file", str(packages)
+        "install",
+        "--channel",
+        "bioconda",
+        "--file",
+        str(package_file),
+        "--json",
+        "--dry-run",
     )
 
     # Get a set of packages at their latest compatible versions in bioconda
