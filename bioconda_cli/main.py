@@ -7,6 +7,7 @@ from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from itertools import chain
 
 from conda.cli.python_api import run_command
+from conda.exceptions import DryRunExit
 
 import click
 from acclimatise import explore_command
@@ -102,15 +103,18 @@ def list_packages(ctx, test=False):
 )
 @click.pass_context
 def list_versions(ctx, package_file, last_spec=None):
-    stdout, stderr, retcode = run_command(
-        "install",
-        "--channel",
-        "bioconda",
-        "--file",
-        str(package_file),
-        "--json",
-        "--dry-run",
-    )
+    try:
+        stdout, stderr, retcode = run_command(
+            "install",
+            "--channel",
+            "bioconda",
+            "--file",
+            str(package_file),
+            "--json",
+            "--dry-run",
+        )
+    except DryRunExit as e:
+        stdout = e.stdout
 
     # Get a set of packages at their latest compatible versions in bioconda
     packages = set()
