@@ -146,7 +146,7 @@ def install(ctx, spec):
     final_bin = get_conda_binaries()
 
     for new_bin in final_bin - initial_bin:
-        print(str(new_bin) + "\n")
+        print(str(new_bin))
 
 
 @main.command(help='Store all the "--help" outputs in the provided directory')

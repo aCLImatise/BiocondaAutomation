@@ -50,7 +50,7 @@ jobs:
           find_cli --verbose list-versions packages.txt > ToolDefinitions/versions.txt
           cat ToolDefinitions/versions.txt
 
-      - name: Install packages and acclimatise everything
+      - name: Install packages
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc
