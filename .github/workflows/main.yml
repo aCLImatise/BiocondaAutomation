@@ -51,7 +51,8 @@ jobs:
         # We have to manually source .bashrc https://stackoverflow.com/a/37286648/2148718
         run: |
           source /root/.bashrc
-          find_cli --verbose acclimatise ToolDefinitions packages.txt
+          find_cli --verbose install packages.txt > binaries.txt
+          find_cli --verbose acclimatise binaries.txt ToolDefinitions
         shell: bash
 
       - name: Commit files

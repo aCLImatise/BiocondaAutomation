@@ -11,6 +11,7 @@ from conda.cli.python_api import run_command
 import click
 from acclimatise import explore_command
 from acclimatise.yaml import yaml
+from packaging import version
 
 
 def ctx_print(ctx, msg):
@@ -32,7 +33,7 @@ def log_around(msg: str, ctx: dict = {}):
     # Store the stdout and stderr to avoid clogging up the logs
     err = io.StringIO()
     out = io.StringIO()
-    print(msg + "...")
+    print(msg + "...", end="")
     with redirect_stderr(err), redirect_stdout(out):
         yield
     print("Done.")
@@ -66,55 +67,83 @@ def list_bin():
 
 @main.command()
 @click.option("--test", is_flag=True)
+@click.option(
+    "--last-spec",
+    type=click.Path(dir_okay=False),
+    help="Path to a previous output from this command, to "
+    "ensure we only acclimatise new tool versions",
+)
 @click.pass_context
-def env_dump(ctx, test=False):
-    if test:
-        packages = [
-            # 'samtools',
-            "bwa",
-            # 'pisces'
-        ]
-    else:
-        stdout, stderr, retcode = run_command(
+def env_dump(ctx, test=False, last_spec=None):
+    stdout, stderr, retcode = run_command(
+        *[
             "search",
             "--override-channels",  # Don't use system default channels
             "--channel",
             "bioconda",  # Only use bioconda
             "--json",  # We need JSON so we can parse it
-        )
-        packages = json.loads(stdout).keys()
+        ]
+        + ["bwa"]
+        if test
+        else []
+    )
 
-    sys.stdout.writelines([package + "\n" for package in packages])
-    # yaml.dump({
-    #     'name': 'all_bioconda',
-    #     'channels': ['bioconda'],
-    #     'dependencies': packages
-    # }, sys.stdout)
+    # Get a set of packages at their latest versions in bioconda
+    packages = set()
+    for key, results in json.loads(stdout).items():
+        latest_version = max(results, key=lambda x: version.parse(x["version"]))
+        packages.add("{}={}".format(key, latest_version["version"]))
+
+    # The previous spec file basically defines a set of versions *not* to use
+    if last_spec is not None:
+        with open(last_spec) as fp:
+            last_spec_versions = set((line.strip() for line in fp.readlines()))
+    else:
+        last_spec_versions = set()
+
+    # Subtract the two sets to produce the final result
+    sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
 
 
-@main.command(help='Store all the "--help" outputs in the provided directory')
-@click.argument("out", type=click.Path(file_okay=False, dir_okay=True, exists=True))
+@main.command(help="Install a list of packages and list the new binaries")
 @click.argument(
-    "environment", type=click.Path(file_okay=True, dir_okay=False, exists=True)
+    "spec", type=click.Path(dir_okay=False), help="Path to a package file to install"
 )
 @click.pass_context
-def acclimatise(ctx, out, environment):
+def install(ctx, spec):
     with log_around("Listing conda packages", ctx.obj):
         initial_bin = get_conda_binaries()
 
     with log_around("Installing conda packages", ctx.obj):
-        run_command("install", "--channel", "bioconda", "--file", str(environment))
+        run_command("install", "--channel", "bioconda", "--file", str(spec))
     final_bin = get_conda_binaries()
 
-    # Output the help text to the directory
-    for bin in final_bin - initial_bin:
-        with log_around("Exploring {}".format(bin), ctx.obj):
-            try:
-                cmd = explore_command([str(bin)])
-                with (pathlib.Path(out) / bin.name).with_suffix(".yml").open("w") as fp:
-                    yaml.dump(cmd, fp)
-            except Exception as e:
-                print("Command {} failed with error {} using the output".format(bin, e))
+    for new_bin in final_bin - initial_bin:
+        print(str(new_bin) + "\n")
+
+
+@main.command(help='Store all the "--help" outputs in the provided directory')
+@click.argument("bins", type=click.Path(file_okay=True, dir_okay=False, exists=True))
+@click.argument("out", type=click.Path(file_okay=False, dir_okay=True, exists=True))
+@click.pass_context
+def acclimatise(ctx, out, bins):
+    with open(bins) as bins_fp:
+        # Output the help text to the directory
+        for line in bins_fp:
+            line = pathlib.Path(line)
+            with log_around("Exploring {}".format(line), ctx.obj):
+                try:
+                    cmd = explore_command([str(line)])
+                    with (pathlib.Path(out) / line.name).with_suffix(".yml").open(
+                        "w"
+                    ) as fp:
+                        yaml.dump(cmd, fp)
+                except Exception as e:
+                    print(
+                        "Command {} failed with error {} using the output".format(
+                            line, e
+                        )
+                    )
 
 
 if __name__ == "__main__":
