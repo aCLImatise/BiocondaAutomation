@@ -17,7 +17,7 @@ from packaging import version
 
 def ctx_print(ctx, msg):
     if ctx.obj["VERBOSE"]:
-        print(msg)
+        print(msg, file=sys.stderr)
 
 
 @contextmanager
@@ -44,12 +44,12 @@ def log_around(msg: str, ctx: dict = {}):
         print("\t" + line, file=sys.stderr)
 
 
-def get_conda_binaries():
+def get_conda_binaries(ctx):
     conda_env = os.environ.get("CONDA_PREFIX")
     if conda_env is None:
         raise Exception("You must be in a conda environment to run this")
 
-    print("Conda env is {}".format(conda_env))
+    ctx_print(ctx, "Conda env is {}".format(conda_env))
     return set((pathlib.Path(conda_env) / "bin").iterdir())
 
 
@@ -62,8 +62,9 @@ def main(ctx, verbose):
 
 
 @main.command()
-def list_bin():
-    print("\n".join([str(x) for x in get_conda_binaries()]))
+@click.pass_context
+def list_bin(ctx):
+    print("\n".join([str(x) for x in get_conda_binaries(ctx)]))
 
 
 @main.command(help="Lists all the packages in bioconda")
@@ -138,12 +139,12 @@ def list_versions(ctx, package_file, last_spec=None):
 @click.argument("spec", type=click.Path(dir_okay=False))
 @click.pass_context
 def install(ctx, spec):
-    initial_bin = get_conda_binaries()
+    initial_bin = get_conda_binaries(ctx)
 
     with log_around("Installing conda packages", ctx.obj):
         run_command("install", "--channel", "bioconda", "--file", str(spec))
 
-    final_bin = get_conda_binaries()
+    final_bin = get_conda_binaries(ctx)
 
     for new_bin in final_bin - initial_bin:
         print(str(new_bin))
@@ -157,18 +158,18 @@ def acclimatise(ctx, out, bins):
     with open(bins) as bins_fp:
         # Output the help text to the directory
         for line in bins_fp:
-            cmd = pathlib.Path(line.strip())
-            with log_around("Exploring {}".format(cmd), ctx.obj):
+            exe = pathlib.Path(line.strip())
+            with log_around("Exploring {}".format(exe), ctx.obj):
                 try:
-                    cmd = explore_command([str(cmd)])
-                    with (pathlib.Path(out) / cmd.name).with_suffix(".yml").open(
+                    cmd = explore_command([str(exe)])
+                    with (pathlib.Path(out) / exe.name).with_suffix(".yml").open(
                         "w"
                     ) as fp:
                         yaml.dump(cmd, fp)
                 except Exception as e:
                     print(
                         "Command {} failed with error {} using the output".format(
-                            cmd, e
+                            exe, e
                         )
                     )
 
