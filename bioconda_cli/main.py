@@ -54,6 +54,23 @@ def get_conda_binaries(ctx):
     return set((pathlib.Path(conda_env) / "bin").iterdir())
 
 
+@contextmanager
+def activate_env(env: pathlib.Path):
+    env_backup = os.environ.copy()
+
+    # Temporarily set some variables
+    os.environ["CONDA_PREFIX"] = str(env)
+    os.environ["CONDA_SHLVL"] = "2"
+    os.environ["PATH"] = str(env / "bin") + ":" + os.environ["PATH"]
+    os.environ["CONDA_PREFIX_1"] = env_backup["CONDA_PREFIX"]
+
+    # Do some action
+    yield
+
+    # Then reset those variables
+    os.environ.update(env_backup)
+
+
 @click.group()
 @click.option("--verbose", is_flag=True)
 @click.pass_context
@@ -186,24 +203,25 @@ def install(ctx, packages, out):
                         "conda-forge",
                         versioned_package,
                     )
-                    run_command("activate", dir)
-                    new_bin = get_conda_binaries(ctx)
 
-                    # Acclimatise each new executable
-                    for exe in new_bin - initial_bin:
-                        with log_around("Exploring {}".format(exe), ctx.obj):
-                            try:
-                                cmd = explore_command([str(exe)])
-                                with (pathlib.Path(out) / exe.name).with_suffix(
-                                    ".yml"
-                                ).open("w") as out_fp:
-                                    yaml.dump(cmd, out_fp)
-                            except Exception as e:
-                                print(
-                                    "Command {} failed with error {} using the output".format(
-                                        exe, e
+                    with activate_env(pathlib.Path(dir)):
+                        new_bin = get_conda_binaries(ctx)
+
+                        # Acclimatise each new executable
+                        for exe in new_bin - initial_bin:
+                            with log_around("Exploring {}".format(exe), ctx.obj):
+                                try:
+                                    cmd = explore_command([str(exe)])
+                                    with (pathlib.Path(out) / exe.name).with_suffix(
+                                        ".yml"
+                                    ).open("w") as out_fp:
+                                        yaml.dump(cmd, out_fp)
+                                except Exception as e:
+                                    print(
+                                        "Command {} failed with error {} using the output".format(
+                                            exe, e
+                                        )
                                     )
-                                )
 
 
 # @main.command(help='Store all the "--help" outputs in the provided directory')
