@@ -195,7 +195,8 @@ def install(ctx, packages, out):
                     run_command(
                         "create",
                         "--yes",
-                        "-p",
+                        "--quiet",
+                        "--prefix",
                         dir,
                         "--channel",
                         "bioconda",
@@ -208,7 +209,10 @@ def install(ctx, packages, out):
                         new_bin = get_conda_binaries(ctx)
 
                         # Acclimatise each new executable
-                        for exe in new_bin - initial_bin:
+                        new_exes = new_bin - initial_bin
+                        if len(new_exes) == 0:
+                            ctx_print(ctx, "Packages has no executables. Skipping.")
+                        for exe in new_exes:
                             with log_around("Exploring {}".format(exe), ctx.obj):
                                 try:
                                     cmd = explore_command([str(exe)])
