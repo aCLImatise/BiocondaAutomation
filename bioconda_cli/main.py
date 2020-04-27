@@ -11,9 +11,10 @@ from itertools import chain
 from multiprocessing import Lock, Pool
 from typing import List, Tuple
 
-from conda.cli.install import execute_actions, get_index, install_actions_list
 from conda.cli.python_api import run_command
+from conda.core.index import get_index
 from conda.exceptions import DryRunExit
+from conda.plan import execute_actions, install_actions_list
 from tqdm import tqdm
 
 import click
