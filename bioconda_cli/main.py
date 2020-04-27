@@ -127,6 +127,11 @@ def get_parser():
         help="Use a tiny subset of bioconda for testing purposes",
     )
     cmd_list.add_argument(
+        "--filter-r",
+        action="store_true",
+        help="Filter out R packages, which don't tend to have CLIs",
+    )
+    cmd_list.add_argument(
         "--last-spec",
         type=click.Path(dir_okay=False),
         help="Path to a previous output from this command, to "
@@ -157,7 +162,7 @@ def list_bin(ctx):
     print("\n".join([str(x) for x in get_conda_binaries(ctx)]))
 
 
-def list_packages(test=False, last_spec=None, verbose=True):
+def list_packages(test=False, last_spec=None, verbose=True, filter_r=False):
     with log_around("Listing packages", capture=False, verbose=verbose):
         stdout, stderr, retcode = run_command(
             "search",
@@ -176,6 +181,8 @@ def list_packages(test=False, last_spec=None, verbose=True):
 
     # The package names are keys to the output dict
     for key, versions in json.loads(stdout).items():
+        if filter_r and (key.startswith("r-") or key.startswith("bioconductor-")):
+            continue
         latest_version = max(versions, key=lambda v: parse(v["version"]))
         packages.add("{}={}".format(key, latest_version["version"]))
 
