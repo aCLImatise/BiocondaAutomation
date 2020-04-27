@@ -267,7 +267,9 @@ def install(packages, out, verbose=False, processes=None):
     with open(packages) as fp:
         with Pool(processes) as pool:
             lines = fp.readlines()
-            func = partial(commands_from_package, out=out, verbose=verbose)
+            func = partial(
+                commands_from_package, out=pathlib.Path(out), verbose=verbose
+            )
             pool.map(func, lines)
 
 
