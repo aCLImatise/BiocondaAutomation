@@ -183,7 +183,9 @@ def list_packages(test=False, last_spec=None, verbose=True):
     sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
 
 
-def commands_from_package(line: str, ctx) -> List[Tuple[Command, pathlib.Path]]:
+def commands_from_package(
+    line: str, verbose=True
+) -> List[Tuple[Command, pathlib.Path]]:
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
     """
@@ -193,7 +195,7 @@ def commands_from_package(line: str, ctx) -> List[Tuple[Command, pathlib.Path]]:
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
     commands = []
-    with log_around("Installing {}".format(package), ctx.obj):
+    with log_around("Installing {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
             run_command(
                 "create",
