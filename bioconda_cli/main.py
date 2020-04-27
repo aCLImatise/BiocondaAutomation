@@ -20,6 +20,9 @@ from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
 from packaging.version import parse
 
+# Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
+lock = Lock()
+
 
 def ctx_print(msg, verbose=True):
     if verbose:
@@ -243,7 +246,7 @@ def install(packages, out, verbose=False):
     with open(packages) as fp:
         with Pool() as pool:
             lines = fp.readlines()
-            func = partial(commands_from_package, lock=Lock(), verbose=verbose)
+            func = partial(commands_from_package, verbose=verbose)
             for commands in tqdm(pool.map(func, lines), total=len(lines)):
                 for command, binary in commands:
                     with (pathlib.Path(out) / binary.name).with_suffix(".yml").open(
