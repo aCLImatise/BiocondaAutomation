@@ -215,7 +215,7 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
     package, version = versioned_package.split("=")
 
     # Each package should have its own subdirectory
-    out_subdir = out / package / version
+    out_subdir = (out / package) / version
     out_subdir.mkdir(parents=True, exist_ok=True)
 
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
