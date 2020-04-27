@@ -5,13 +5,17 @@ import pathlib
 import sys
 import tempfile
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from functools import partial
 from itertools import chain
+from multiprocessing import Pool
+from typing import List, Tuple
 
 from conda.cli.python_api import run_command
 from conda.exceptions import DryRunExit
+from tqdm import tqdm
 
 import click
-from acclimatise import explore_command
+from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
 from packaging.version import parse
 
@@ -52,6 +56,26 @@ def get_conda_binaries(ctx):
 
     ctx_print(ctx, "Conda env is {}".format(conda_env))
     return set((pathlib.Path(conda_env) / "bin").iterdir())
+
+
+def get_package_binaries(package, version) -> List[pathlib.Path]:
+    """
+    Given an already installed package, lists the binaries provided by it
+    """
+    conda_env = os.environ.get("CONDA_PREFIX")
+    if conda_env is None:
+        raise Exception("You must be in a conda environment to run this")
+
+    pkg_dir = list(
+        (pathlib.Path(conda_env) / "pkgs").glob("{}-{}".format(package, version))
+    )
+
+    if len(pkg_dir) > 0:
+        raise Exception("Multiple packages matched the package/version pair")
+    if len(pkg_dir) == 0:
+        raise Exception("No installed packages matched the package/version pair")
+
+    return list((pkg_dir[0] / "bin").iterdir())
 
 
 @contextmanager
@@ -173,62 +197,72 @@ def list_packages(ctx, test=False, last_spec=None):
 #     sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
 
 
+def commands_from_package(line: str, ctx) -> List[Tuple[Command, pathlib.Path]]:
+    """
+    Given a package name, install it in an isolated environment, and acclimatise all package binaries
+    """
+    versioned_package = line.strip()
+    package, version = versioned_package.split("=")
+
+    # We have to install and uninstall each package separately because doing it all at once forces Conda to
+    # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
+    commands = []
+    with log_around("Installing {}".format(package), ctx.obj):
+        with tempfile.TemporaryDirectory() as dir:
+            run_command(
+                "create",
+                "--yes",
+                "--quiet",
+                "--prefix",
+                dir,
+                "--channel",
+                "bioconda",
+                "--channel",
+                "conda-forge",
+                versioned_package,
+            )
+
+            with activate_env(pathlib.Path(dir)):
+
+                # Acclimatise each new executable
+                new_exes = get_package_binaries(package, version)
+                if len(new_exes) == 0:
+                    ctx_print(ctx, "Packages has no executables. Skipping.")
+                for exe in new_exes:
+                    with log_around("Exploring {}".format(exe), ctx.obj):
+                        try:
+                            cmd = explore_command([str(exe)])
+                            commands.append((cmd, exe))
+                        except Exception as e:
+                            print(
+                                "Command {} failed with error {} using the output".format(
+                                    exe, e
+                                )
+                            )
+    return commands
+
+
 @main.command(help="Install a list of packages and list the new binaries")
 # A file which contains one package per line
 @click.argument("packages", type=click.Path(dir_okay=False))
 @click.argument("out", type=click.Path(file_okay=False, dir_okay=True, exists=True))
 @click.pass_context
 def install(ctx, packages, out):
-    # Ignore all the default conda packages
-    initial_bin = get_conda_binaries(ctx)
-
     # Iterate each package in the input file
     with open(packages) as fp:
-        for line in fp:
-            versioned_package = line.strip()
-            package, version = versioned_package.split("=")
+        with Pool() as pool:
+            lines = fp.readlines()
+            func = partial(commands_from_package, ctx=ctx)
+            for commands in tqdm(pool.starmap(func, lines), total=len(lines)):
+                for command, binary in commands:
+                    with (pathlib.Path(out) / binary.name).with_suffix(".yml").open(
+                        "w"
+                    ) as out_fp:
+                        yaml.dump(command, out_fp)
 
-            # We have to install and uninstall each package separately because doing it all at once forces Conda to
-            # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
-            with log_around("Installing {}".format(package), ctx.obj):
-                with tempfile.TemporaryDirectory() as dir:
-                    run_command(
-                        "create",
-                        "--yes",
-                        "--quiet",
-                        "--prefix",
-                        dir,
-                        "--channel",
-                        "bioconda",
-                        "--channel",
-                        "conda-forge",
-                        versioned_package,
-                    )
-
-                    with activate_env(pathlib.Path(dir)):
-                        new_bin = get_conda_binaries(ctx)
-
-                        # Acclimatise each new executable
-                        new_exes = new_bin - initial_bin
-                        if len(new_exes) == 0:
-                            ctx_print(ctx, "Packages has no executables. Skipping.")
-                        for exe in new_exes:
-                            with log_around("Exploring {}".format(exe), ctx.obj):
-                                try:
-                                    cmd = explore_command([str(exe)])
-                                    with (pathlib.Path(out) / exe.name).with_suffix(
-                                        ".yml"
-                                    ).open("w") as out_fp:
-                                        yaml.dump(cmd, out_fp)
-                                except Exception as e:
-                                    print(
-                                        "Command {} failed with error {} using the output".format(
-                                            exe, e
-                                        )
-                                    )
+            # @main.command(help='Store all the "--help" outputs in the provided directory')
 
 
-# @main.command(help='Store all the "--help" outputs in the provided directory')
 # @click.argument("bins", type=click.Path(file_okay=True, dir_okay=False, exists=True))
 # @click.argument("out", type=click.Path(file_okay=False, dir_okay=True, exists=True))
 # @click.pass_context

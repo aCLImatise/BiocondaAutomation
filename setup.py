@@ -9,6 +9,7 @@ setup(
         "acclimatise>=0.0.7",
         "ruamel.yaml==0.16.5",
         "packaging",
+        "tqdm",
     ],
     extras_require={"dev": ["pytest", "pre-commit"],},
     entry_points={
