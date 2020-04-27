@@ -15,7 +15,7 @@ import click
 from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
 from conda.api import Solver
-from conda.cli.python_api import Commands, run_command
+from conda.cli.python_api import run_command
 from packaging.version import parse
 from tqdm import tqdm
 
@@ -219,10 +219,7 @@ def commands_from_package(
             with activate_env(pathlib.Path(dir)):
                 # Generate the query plan concurrently
                 solver = Solver(
-                    dir,
-                    ["bioconda", "conda-forge"],
-                    specs_to_add=[versioned_package],
-                    command=Commands.INSTALL,
+                    dir, ["bioconda", "conda-forge"], specs_to_add=[versioned_package]
                 )
                 transaction = solver.solve_for_transaction()
 
