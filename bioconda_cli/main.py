@@ -189,7 +189,7 @@ def list_packages(test=False, last_spec=None, verbose=True):
 
 
 def commands_from_package(
-    line: str, verbose=True
+    line: str, lock: Lock, verbose=True
 ) -> List[Tuple[Command, pathlib.Path]]:
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
@@ -204,7 +204,7 @@ def commands_from_package(
         with tempfile.TemporaryDirectory() as dir:
 
             # We can't run the installs concurrently, because they used the shared conda packages cache
-            with Lock():
+            with lock:
                 run_command(
                     "create",
                     "--yes",
@@ -243,7 +243,7 @@ def install(packages, out, verbose=False):
     with open(packages) as fp:
         with Pool() as pool:
             lines = fp.readlines()
-            func = partial(commands_from_package, verbose=verbose)
+            func = partial(commands_from_package, lock=Lock(), verbose=verbose)
             for commands in tqdm(pool.map(func, lines), total=len(lines)):
                 for command, binary in commands:
                     with (pathlib.Path(out) / binary.name).with_suffix(".yml").open(
