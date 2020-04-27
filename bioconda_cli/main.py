@@ -103,7 +103,7 @@ def main():
     kwargs = vars(args)
     func = args.func
     kwargs.pop("func")
-    func(kwargs)
+    func(**kwargs)
 
 
 def get_parser():
@@ -139,7 +139,7 @@ def get_parser():
     cmd_install.add_argument(
         "out",
         type=click.Path(file_okay=False, dir_okay=True, exists=True),
-        help="A directory into" "which to produce output files",
+        help="A directory into which to produce output files",
     )
     cmd_install.set_defaults(func=install)
 
