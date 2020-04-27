@@ -14,10 +14,10 @@ from typing import List, Tuple
 import click
 from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
-from conda.cli.python_api import run_command
-from conda.core.index import get_index
+from conda.cli.install import handle_txn
+from conda.cli.python_api import Commands, run_command
+from conda.core.solve import Solver
 from conda.exceptions import DryRunExit
-from conda.plan import execute_actions, install_actions
 from packaging.version import parse
 from tqdm import tqdm
 
@@ -213,13 +213,17 @@ def commands_from_package(
 
             with activate_env(pathlib.Path(dir)):
                 # Generate the query plan concurrently
-                index = get_index(channel_urls=("bioconda", "conda-forge"))
-                action_set = install_actions(dir, index, [versioned_package])
+                solver = Solver(
+                    dir,
+                    ["bioconda", "conda-forge"],
+                    specs_to_add=[versioned_package],
+                    command=Commands.INSTALL,
+                )
+                transaction = solver.solve_for_transaction()
 
                 # We can't run the installs concurrently, because they used the shared conda packages cache
                 with lock:
-                    for actions in action_set:
-                        execute_actions(actions, index)
+                    handle_txn(transaction, prefix=dir, args=None, newenv=None)
 
                 # Acclimatise each new executable
                 new_exes = get_package_binaries(package, version)
