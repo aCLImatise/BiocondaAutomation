@@ -8,7 +8,7 @@ import tempfile
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from functools import partial
 from itertools import chain
-from multiprocessing import Pool
+from multiprocessing import Lock, Pool
 from typing import List, Tuple
 
 from conda.cli.python_api import run_command
@@ -202,18 +202,21 @@ def commands_from_package(
     commands = []
     with log_around("Installing {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
-            run_command(
-                "create",
-                "--yes",
-                "--quiet",
-                "--prefix",
-                dir,
-                "--channel",
-                "bioconda",
-                "--channel",
-                "conda-forge",
-                versioned_package,
-            )
+
+            # We can't run the installs concurrently, because they used the shared conda packages cache
+            with Lock():
+                run_command(
+                    "create",
+                    "--yes",
+                    "--quiet",
+                    "--prefix",
+                    dir,
+                    "--channel",
+                    "bioconda",
+                    "--channel",
+                    "conda-forge",
+                    versioned_package,
+                )
 
             with activate_env(pathlib.Path(dir)):
 
