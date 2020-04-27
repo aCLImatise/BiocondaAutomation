@@ -26,7 +26,7 @@ def ctx_print(ctx, msg):
 
 
 @contextmanager
-def log_around(msg: str, ctx: dict = {}):
+def log_around(msg: str, ctx: dict = {}, capture=True):
     """
     Wraps a long function invocation with a message like:
     "Running long process... done"
@@ -45,8 +45,9 @@ def log_around(msg: str, ctx: dict = {}):
     print("Done.", file=sys.stderr)
 
     # Indent the stdout/stderr
-    for line in chain(out.readlines(), err.readlines()):
-        print("\t" + line, file=sys.stderr)
+    if capture:
+        for line in chain(out.readlines(), err.readlines()):
+            print("\t" + line, file=sys.stderr)
 
 
 def get_conda_binaries(ctx):
@@ -122,18 +123,19 @@ def list_bin(ctx):
 )
 @click.pass_context
 def list_packages(ctx, test=False, last_spec=None):
-    stdout, stderr, retcode = run_command(
-        "search",
-        *(
-            [
-                "--override-channels",  # Don't use system default channels
-                "--channel",
-                "bioconda",  # Only use bioconda
-                "--json",  # We need JSON so we can parse it
-            ]
-            + (["bwa"] if test else [])
+    with log_around("Listing packages", ctx=ctx, capture=False):
+        stdout, stderr, retcode = run_command(
+            "search",
+            *(
+                [
+                    "--override-channels",  # Don't use system default channels
+                    "--channel",
+                    "bioconda",  # Only use bioconda
+                    "--json",  # We need JSON so we can parse it
+                ]
+                + (["bwa"] if test else [])
+            )
         )
-    )
 
     packages = set()
 
