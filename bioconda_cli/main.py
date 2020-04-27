@@ -8,6 +8,7 @@ import tempfile
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from functools import partial
 from itertools import chain
+from logging import ERROR, getLogger
 from multiprocessing import Lock, Pool
 from typing import List, Tuple
 
@@ -21,6 +22,9 @@ from tqdm import tqdm
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
 lock = Lock()
+
+# This might make conda a bit quieter
+getLogger("conda").setLevel(ERROR)
 
 
 def ctx_print(msg, verbose=True):
@@ -210,9 +214,12 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
     versioned_package = line.strip()
     package, version = versioned_package.split("=")
 
+    # Each package should have its own subdirectory
+    out_subdir = out / package / version
+    out_subdir.mkdir(parents=True, exist_ok=True)
+
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
-    commands = []
     with log_around("Installing {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
             # Create an empty environment
@@ -240,9 +247,9 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                     with log_around("Exploring {}".format(exe), verbose):
                         try:
                             cmd = explore_command([exe.name])
-                            with (pathlib.Path(out) / exe.name).with_suffix(
-                                ".yml"
-                            ).open("w") as out_fp:
+                            with (out_subdir / exe.name).with_suffix(".yml").open(
+                                "w"
+                            ) as out_fp:
                                 yaml.dump(cmd, out_fp)
                         except Exception as e:
                             print(
