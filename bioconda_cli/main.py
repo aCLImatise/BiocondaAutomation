@@ -11,6 +11,7 @@ from itertools import chain
 from multiprocessing import Lock, Pool
 from typing import List, Tuple
 
+from conda.cli.install import execute_actions, get_index, install_actions_list
 from conda.cli.python_api import run_command
 from conda.exceptions import DryRunExit
 from tqdm import tqdm
@@ -205,23 +206,20 @@ def commands_from_package(
     commands = []
     with log_around("Installing {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
-
-            # We can't run the installs concurrently, because they used the shared conda packages cache
-            with lock:
-                run_command(
-                    "create",
-                    "--yes",
-                    "--quiet",
-                    "--prefix",
-                    dir,
-                    "--channel",
-                    "bioconda",
-                    "--channel",
-                    "conda-forge",
-                    versioned_package,
-                )
+            # Create an empty environment
+            run_command(
+                "create", "--yes", "--quiet", "--prefix", dir,
+            )
 
             with activate_env(pathlib.Path(dir)):
+                # Generate the query plan concurrently
+                index = get_index(channel_urls=("bioconda", "conda-forge"))
+                action_set = install_actions_list(dir, index, [versioned_package])
+
+                # We can't run the installs concurrently, because they used the shared conda packages cache
+                with lock:
+                    for actions in action_set:
+                        execute_actions(actions, index)
 
                 # Acclimatise each new executable
                 new_exes = get_package_binaries(package, version)
