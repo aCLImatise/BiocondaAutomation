@@ -67,17 +67,22 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
     conda_env = os.environ.get("CONDA_PREFIX")
     if conda_env is None:
         raise Exception("You must be in a conda environment to run this")
+    env_path = pathlib.Path(conda_env)
 
-    pkg_dir = list(
-        (pathlib.Path(conda_env) / "pkgs").glob("{}-{}".format(package, version))
+    metadata = list(
+        (env_path / "conda-meta").glob("{}-{}*.json".format(package, version))
     )
 
-    if len(pkg_dir) > 0:
+    if len(metadata) > 0:
         raise Exception("Multiple packages matched the package/version pair")
-    if len(pkg_dir) == 0:
+    if len(metadata) == 0:
         raise Exception("No installed packages matched the package/version pair")
 
-    return list((pkg_dir[0] / "bin").iterdir())
+    # The binaries in a given package are listed in the files key of the metadata file
+    with metadata[0].open() as fp:
+        parsed = json.load(fp)
+        # Only return binaries, not just any package file. Their actual location is relative to the prefix
+        return [env_path / f for f in parsed["files"] if f.startswith("bin/")]
 
 
 @contextmanager
@@ -215,9 +220,9 @@ def commands_from_package(
                 # Acclimatise each new executable
                 new_exes = get_package_binaries(package, version)
                 if len(new_exes) == 0:
-                    ctx_print(ctx, "Packages has no executables. Skipping.")
+                    ctx_print("Packages has no executables. Skipping.", verbose)
                 for exe in new_exes:
-                    with log_around("Exploring {}".format(exe), ctx.obj):
+                    with log_around("Exploring {}".format(exe), verbose):
                         try:
                             cmd = explore_command([str(exe)])
                             commands.append((cmd, exe))
