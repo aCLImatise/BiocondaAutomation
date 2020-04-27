@@ -144,6 +144,7 @@ def get_parser():
     )
     cmd_install.add_argument(
         "--processes",
+        type=int,
         default=None,
         help="Use this many processes instead of all the available CPUs",
     )
