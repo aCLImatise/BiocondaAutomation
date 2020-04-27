@@ -214,7 +214,7 @@ def commands_from_package(
             with activate_env(pathlib.Path(dir)):
                 # Generate the query plan concurrently
                 index = get_index(channel_urls=("bioconda", "conda-forge"))
-                action_set = install_actions_list(dir, index, [versioned_package])
+                action_set = install_actions(dir, index, [versioned_package])
 
                 # We can't run the installs concurrently, because they used the shared conda packages cache
                 with lock:
