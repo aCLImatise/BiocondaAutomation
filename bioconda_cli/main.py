@@ -223,7 +223,8 @@ def commands_from_package(
 
                 # We can't run the installs concurrently, because they used the shared conda packages cache
                 with lock:
-                    handle_txn(transaction, prefix=dir, args=None, newenv=None)
+                    transaction.download_and_extract()
+                    transaction.execute()
 
                 # Acclimatise each new executable
                 new_exes = get_package_binaries(package, version)
