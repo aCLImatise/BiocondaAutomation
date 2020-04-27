@@ -192,7 +192,7 @@ def list_packages(test=False, last_spec=None, verbose=True):
 
 
 def commands_from_package(
-    line: str, lock: Lock, verbose=True
+    line: str, verbose=True
 ) -> List[Tuple[Command, pathlib.Path]]:
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
