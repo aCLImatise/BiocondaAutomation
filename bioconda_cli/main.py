@@ -11,16 +11,15 @@ from itertools import chain
 from multiprocessing import Lock, Pool
 from typing import List, Tuple
 
-from conda.cli.python_api import run_command
-from conda.core.index import get_index
-from conda.exceptions import DryRunExit
-from conda.plan import execute_actions, install_actions_list
-from tqdm import tqdm
-
 import click
 from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
+from conda.cli.python_api import run_command
+from conda.core.index import get_index
+from conda.exceptions import DryRunExit
+from conda.plan import execute_actions, install_actions
 from packaging.version import parse
+from tqdm import tqdm
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
 lock = Lock()
