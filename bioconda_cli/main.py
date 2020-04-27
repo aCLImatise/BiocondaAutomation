@@ -203,9 +203,7 @@ def list_packages(test=False, last_spec=None, verbose=True, filter_r=False):
     sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
 
 
-def commands_from_package(
-    line: str, verbose=True
-) -> List[Tuple[Command, pathlib.Path]]:
+def commands_from_package(line: str, out: pathlib.Path, verbose=True):
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
     """
@@ -242,14 +240,16 @@ def commands_from_package(
                     with log_around("Exploring {}".format(exe), verbose):
                         try:
                             cmd = explore_command([str(exe)])
-                            commands.append((cmd, exe))
+                            with (pathlib.Path(out) / exe.name).with_suffix(
+                                ".yml"
+                            ).open("w") as out_fp:
+                                yaml.dump(cmd, out_fp)
                         except Exception as e:
                             print(
                                 "Command {} failed with error {} using the output".format(
                                     exe, e
                                 )
                             )
-    return commands
 
 
 def install(packages, out, verbose=False, processes=None):
@@ -257,13 +257,8 @@ def install(packages, out, verbose=False, processes=None):
     with open(packages) as fp:
         with Pool(processes) as pool:
             lines = fp.readlines()
-            func = partial(commands_from_package, verbose=verbose)
-            for commands in tqdm(pool.map(func, lines), total=len(lines)):
-                for command, binary in commands:
-                    with (pathlib.Path(out) / binary.name).with_suffix(".yml").open(
-                        "w"
-                    ) as out_fp:
-                        yaml.dump(command, out_fp)
+            func = partial(commands_from_package, out=out, verbose=verbose)
+            pool.map(func, lines)
 
 
 if __name__ == "__main__":
