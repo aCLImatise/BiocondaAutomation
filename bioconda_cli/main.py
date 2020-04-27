@@ -73,7 +73,7 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
         (env_path / "conda-meta").glob("{}-{}*.json".format(package, version))
     )
 
-    if len(metadata) > 0:
+    if len(metadata) > 1:
         raise Exception("Multiple packages matched the package/version pair")
     if len(metadata) == 0:
         raise Exception("No installed packages matched the package/version pair")
