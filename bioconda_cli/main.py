@@ -1,3 +1,4 @@
+import argparse
 import io
 import json
 import os
@@ -20,19 +21,19 @@ from acclimatise.yaml import yaml
 from packaging.version import parse
 
 
-def ctx_print(ctx, msg):
-    if ctx.obj["VERBOSE"]:
+def ctx_print(msg, verbose=True):
+    if verbose:
         print(msg, file=sys.stderr)
 
 
 @contextmanager
-def log_around(msg: str, ctx: dict = {}, capture=True):
+def log_around(msg: str, verbose=True, capture=True):
     """
     Wraps a long function invocation with a message like:
     "Running long process... done"
     """
     # Skip this unless we're in verbose mode
-    if not ctx.get("VERBOSE"):
+    if not verbose:
         yield
         return
 
@@ -50,12 +51,12 @@ def log_around(msg: str, ctx: dict = {}, capture=True):
             print("\t" + line, file=sys.stderr)
 
 
-def get_conda_binaries(ctx):
+def get_conda_binaries(verbose):
     conda_env = os.environ.get("CONDA_PREFIX")
     if conda_env is None:
         raise Exception("You must be in a conda environment to run this")
 
-    ctx_print(ctx, "Conda env is {}".format(conda_env))
+    ctx_print("Conda env is {}".format(conda_env), verbose)
     return set((pathlib.Path(conda_env) / "bin").iterdir())
 
 
@@ -96,34 +97,61 @@ def activate_env(env: pathlib.Path):
     os.environ.update(env_backup)
 
 
-@click.group()
-@click.option("--verbose", is_flag=True)
-@click.pass_context
-def main(ctx, verbose):
-    ctx.ensure_object(dict)
-    ctx.obj["VERBOSE"] = verbose
+def main():
+    parser = get_parser()
+    args = parser.parse_args()
+    kwargs = vars(args)
+    func = args.func
+    kwargs.pop("func")
+    func(kwargs)
 
 
-@main.command()
-@click.pass_context
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--verbose", action="store_true")
+    subparsers = parser.add_subparsers()
+
+    cmd_list = subparsers.add_parser(
+        "list-packages", help="Lists all the packages in bioconda, one per line"
+    )
+    cmd_list.add_argument(
+        "--test",
+        action="store_true",
+        help="Use a tiny subset of bioconda for testing purposes",
+    )
+    cmd_list.add_argument(
+        "--last-spec",
+        type=click.Path(dir_okay=False),
+        help="Path to a previous output from this command, to "
+        "ensure we only acclimatise new tool versions",
+    )
+    cmd_list.set_defaults(func=list_packages)
+
+    cmd_install = subparsers.add_parser(
+        "install", help="Install a list of packages and list the new binaries"
+    )
+    cmd_install.add_argument(
+        "packages",
+        type=click.Path(dir_okay=False),
+        help="A file that has one package with "
+        "associated version number, one per line",
+    )
+    cmd_install.add_argument(
+        "out",
+        type=click.Path(file_okay=False, dir_okay=True, exists=True),
+        help="A directory into" "which to produce output files",
+    )
+    cmd_install.set_defaults(func=install)
+
+    return parser
+
+
 def list_bin(ctx):
     print("\n".join([str(x) for x in get_conda_binaries(ctx)]))
 
 
-@main.command(help="Lists all the packages in bioconda, one per line")
-@click.option(
-    "--test", is_flag=True, help="Use a tiny subset of bioconda for testing purposes"
-)
-# @click.option('--versions', is_flag=True, help='Include package versions in output')
-@click.option(
-    "--last-spec",
-    type=click.Path(dir_okay=False),
-    help="Path to a previous output from this command, to "
-    "ensure we only acclimatise new tool versions",
-)
-@click.pass_context
-def list_packages(ctx, test=False, last_spec=None):
-    with log_around("Listing packages", ctx=ctx, capture=False):
+def list_packages(test=False, last_spec=None, verbose=True):
+    with log_around("Listing packages", capture=False, verbose=verbose):
         stdout, stderr, retcode = run_command(
             "search",
             *(
@@ -153,50 +181,6 @@ def list_packages(ctx, test=False, last_spec=None):
 
     # Subtract the two sets to produce the final result
     sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
-
-
-# @main.command(
-#     help="Produces a file containing all the (system-compatible) versions of all the bioconda packages, "
-#     "excluding those that haven't changed and don't need upgrading"
-# )
-# @click.argument("package_file", type=click.Path(dir_okay=False, exists=True))
-# @click.option(
-#     "--last-spec",
-#     type=click.Path(dir_okay=False),
-#     help="Path to a previous output from this command, to "
-#     "ensure we only acclimatise new tool versions",
-# )
-# @click.pass_context
-# def list_versions(ctx, package_file, last_spec=None):
-#     try:
-#         stdout, stderr, retcode = run_command(
-#             "install",
-#             "--channel",
-#             "bioconda",
-#             "--file",
-#             str(package_file),
-#             "--json",
-#             "--dry-run",
-#             use_exception_handler=True,
-#         )
-#     except DryRunExit as e:
-#         stdout = e.stdout
-#
-#     # Get a set of packages at their latest compatible versions in bioconda
-#     packages = set()
-#     installs = json.loads(stdout)["actions"]["LINK"]
-#     for package in installs:
-#         packages.add("{}={}".format(package["name"], package["version"]))
-#
-#     # The previous spec file basically defines a set of versions *not* to use
-#     if last_spec is not None:
-#         with open(last_spec) as fp:
-#             last_spec_versions = set((line.strip() for line in fp.readlines()))
-#     else:
-#         last_spec_versions = set()
-#
-#     # Subtract the two sets to produce the final result
-#     sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
 
 
 def commands_from_package(line: str, ctx) -> List[Tuple[Command, pathlib.Path]]:
@@ -244,48 +228,18 @@ def commands_from_package(line: str, ctx) -> List[Tuple[Command, pathlib.Path]]:
     return commands
 
 
-@main.command(help="Install a list of packages and list the new binaries")
-# A file which contains one package per line
-@click.argument("packages", type=click.Path(dir_okay=False))
-@click.argument("out", type=click.Path(file_okay=False, dir_okay=True, exists=True))
-@click.pass_context
-def install(ctx, packages, out):
+def install(packages, out, verbose=False):
     # Iterate each package in the input file
     with open(packages) as fp:
         with Pool() as pool:
             lines = fp.readlines()
-            func = partial(commands_from_package, ctx=ctx)
-            for commands in tqdm(pool.starmap(func, lines), total=len(lines)):
+            func = partial(commands_from_package, verbose=verbose)
+            for commands in tqdm(pool.map(func, lines), total=len(lines)):
                 for command, binary in commands:
                     with (pathlib.Path(out) / binary.name).with_suffix(".yml").open(
                         "w"
                     ) as out_fp:
                         yaml.dump(command, out_fp)
-
-            # @main.command(help='Store all the "--help" outputs in the provided directory')
-
-
-# @click.argument("bins", type=click.Path(file_okay=True, dir_okay=False, exists=True))
-# @click.argument("out", type=click.Path(file_okay=False, dir_okay=True, exists=True))
-# @click.pass_context
-# def acclimatise(ctx, out, bins):
-#     with open(bins) as bins_fp:
-#         # Output the help text to the directory
-#         for line in bins_fp:
-#             exe = pathlib.Path(line.strip())
-#             with log_around("Exploring {}".format(exe), ctx.obj):
-#                 try:
-#                     cmd = explore_command([str(exe)])
-#                     with (pathlib.Path(out) / exe.name).with_suffix(".yml").open(
-#                         "w"
-#                     ) as fp:
-#                         yaml.dump(cmd, fp)
-#                 except Exception as e:
-#                     print(
-#                         "Command {} failed with error {} using the output".format(
-#                             exe, e
-#                         )
-#                     )
 
 
 if __name__ == "__main__":
