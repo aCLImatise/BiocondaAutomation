@@ -239,7 +239,7 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                 for exe in new_exes:
                     with log_around("Exploring {}".format(exe), verbose):
                         try:
-                            cmd = explore_command([str(exe)])
+                            cmd = explore_command([exe.name])
                             with (pathlib.Path(out) / exe.name).with_suffix(
                                 ".yml"
                             ).open("w") as out_fp:
