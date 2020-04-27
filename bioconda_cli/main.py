@@ -143,6 +143,11 @@ def get_parser():
         "install", help="Install a list of packages and list the new binaries"
     )
     cmd_install.add_argument(
+        "--processes",
+        default=None,
+        help="Use this many processes instead of all the available CPUs",
+    )
+    cmd_install.add_argument(
         "packages",
         type=click.Path(dir_okay=False),
         help="A file that has one package with "
@@ -231,7 +236,7 @@ def commands_from_package(
                 # Acclimatise each new executable
                 new_exes = get_package_binaries(package, version)
                 if len(new_exes) == 0:
-                    ctx_print("Packages has no executables. Skipping.", verbose)
+                    ctx_print("Package has no executables. Skipping.", verbose)
                 for exe in new_exes:
                     with log_around("Exploring {}".format(exe), verbose):
                         try:
@@ -246,10 +251,10 @@ def commands_from_package(
     return commands
 
 
-def install(packages, out, verbose=False):
+def install(packages, out, verbose=False, processes=None):
     # Iterate each package in the input file
     with open(packages) as fp:
-        with Pool() as pool:
+        with Pool(processes) as pool:
             lines = fp.readlines()
             func = partial(commands_from_package, verbose=verbose)
             for commands in tqdm(pool.map(func, lines), total=len(lines)):
