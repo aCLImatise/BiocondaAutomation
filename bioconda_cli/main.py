@@ -14,10 +14,8 @@ from typing import List, Tuple
 import click
 from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
-from conda.cli.install import handle_txn
+from conda.api import Solver
 from conda.cli.python_api import Commands, run_command
-from conda.core.solve import Solver
-from conda.exceptions import DryRunExit
 from packaging.version import parse
 from tqdm import tqdm
 
