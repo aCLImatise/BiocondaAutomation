@@ -28,6 +28,11 @@ lock = Lock()
 getLogger("conda").setLevel(ERROR)
 
 
+def flush():
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+
 def ctx_print(msg, verbose=True):
     if verbose:
         print(msg, file=sys.stderr)
@@ -240,6 +245,12 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                     try:
                         transaction = solver.solve_for_transaction()
                     except UnsatisfiableError:
+                        ctx_print(
+                            "Failed to solve installation for {}. Trying the free channel.".format(
+                                versioned_package
+                            ),
+                            verbose,
+                        )
                         # If we can't solve the environment, try adding a new channel
                         solver._internal.channels.add(Channel("free"))
                         transaction = solver.solve_for_transaction()
@@ -248,6 +259,7 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                     ctx_print(
                         "Failed to install {}: {}".format(versioned_package, e), verbose
                     )
+                    flush()
                     return
 
                 # We can't run the installs concurrently, because they used the shared conda packages cache
@@ -288,8 +300,7 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                                     exe, e
                                 )
                             )
-    sys.stdout.flush()
-    sys.stderr.flush()
+    flush()
 
 
 def install(packages, out, verbose=False, processes=None):
