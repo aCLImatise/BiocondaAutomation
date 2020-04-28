@@ -155,9 +155,16 @@ def get_parser():
     )
     cmd_install.add_argument(
         "--processes",
+        "-p",
         type=int,
         default=None,
         help="Use this many processes instead of all the available CPUs",
+    )
+    cmd_install.add_argument(
+        "--exit-on-failure",
+        "-x",
+        action="store_true",
+        help="Exit the entire process if any package fails",
     )
     cmd_install.add_argument(
         "packages",
@@ -214,7 +221,9 @@ def list_packages(test=False, last_spec=None, verbose=True, filter_r=False):
     sys.stdout.writelines([package + "\n" for package in packages - last_spec_versions])
 
 
-def commands_from_package(line: str, out: pathlib.Path, verbose=True):
+def commands_from_package(
+    line: str, out: pathlib.Path, verbose=True, exit_on_failure=False
+):
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
     """
@@ -245,12 +254,15 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                 try:
                     transaction = solver.solve_for_transaction()
                 except Exception as e:
-                    # If nothing works, just skip this package
-                    ctx_print(
-                        "Failed to install {}: {}".format(versioned_package, e), verbose
-                    )
-                    flush()
-                    return
+                    if exit_on_failure:
+                        raise e
+                    else:
+                        ctx_print(
+                            "Failed to install {}: {}".format(versioned_package, e),
+                            verbose,
+                        )
+                        flush()
+                        return
 
                 # We can't run the installs concurrently, because they used the shared conda packages cache
                 with lock:
@@ -265,10 +277,7 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                     with log_around("Exploring {}".format(exe), verbose):
                         try:
                             # Briefly cd into the temp directory, so we don't fill up the cwd with junk
-                            cwd = os.getcwd()
-                            os.chdir(dir)
-                            cmd = explore_command([exe.name])
-                            os.chdir(cwd)
+                            cmd = explore_command([exe.name], cwd=dir)
 
                             # Dump a YAML version of the tool
                             with (out_subdir / exe.name).with_suffix(".yml").open(
@@ -285,22 +294,28 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                             (out_subdir / exe.name).with_suffix(".cwl").write_text(cwl)
 
                         except Exception as e:
-                            ctx_print(
-                                "Command {} failed with error {} using the output".format(
-                                    exe, e
-                                ),
-                                verbose,
-                            )
+                            if exit_on_failure:
+                                raise e
+                            else:
+                                ctx_print(
+                                    "Acclimatising the command {} failed with error `{}`".format(
+                                        exe.name, e
+                                    ),
+                                    verbose,
+                                )
     flush()
 
 
-def install(packages, out, verbose=False, processes=None):
+def install(packages, out, verbose=False, processes=None, exit_on_failure=False):
     # Iterate each package in the input file
     with open(packages) as fp:
         with Pool(processes) as pool:
             lines = fp.readlines()
             func = partial(
-                commands_from_package, out=pathlib.Path(out), verbose=verbose
+                commands_from_package,
+                out=pathlib.Path(out).resolve(),
+                verbose=verbose,
+                exit_on_failure=exit_on_failure,
             )
             pool.map(func, lines)
 
