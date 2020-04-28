@@ -263,6 +263,8 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                                     exe, e
                                 )
                             )
+    sys.stdout.flush()
+    sys.stderr.flush()
 
 
 def install(packages, out, verbose=False, processes=None):
