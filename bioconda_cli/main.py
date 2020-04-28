@@ -13,14 +13,13 @@ from multiprocessing import Lock, Pool
 from typing import List, Tuple
 
 import click
-from acclimatise import Command, explore_command
+from acclimatise import Command, CwlGenerator, WdlGenerator, explore_command
 from acclimatise.yaml import yaml
 from conda.api import Solver
 from conda.cli.python_api import run_command
 from conda.exceptions import UnsatisfiableError
 from conda.models.channel import Channel
 from packaging.version import parse
-from tqdm import tqdm
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
 lock = Lock()
@@ -269,10 +268,20 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                             cmd = explore_command([exe.name])
                             os.chdir(cwd)
 
+                            # Dump a YAML version of the tool
                             with (out_subdir / exe.name).with_suffix(".yml").open(
                                 "w"
                             ) as out_fp:
                                 yaml.dump(cmd, out_fp)
+
+                            # Dump a WDL version of the tool
+                            wdl = WdlGenerator().generate_wrapper(cmd)
+                            (out_subdir / exe.name).with_suffix(".wdl").write_text(wdl)
+
+                            # Dump a CWL version of the tool
+                            cwl = CwlGenerator().generate_wrapper(cmd)
+                            (out_subdir / exe.name).with_suffix(".cwl").write_text(cwl)
+
                         except Exception as e:
                             print(
                                 "Command {} failed with error {} using the output".format(
