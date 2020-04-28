@@ -61,7 +61,7 @@ def log_around(msg: str, verbose=True, capture=True):
         err.seek(0)
         out.seek(0)
         for line in chain(out.readlines(), err.readlines()):
-            print("\t" + line, file=sys.stderr)
+            print("\t" + line, file=sys.stderr, end="")
 
 
 def get_conda_binaries(verbose):
@@ -239,26 +239,11 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                 # Generate the query plan concurrently
                 solver = Solver(
                     dir,
-                    ["bioconda", "conda-forge", "r", "main"],
+                    ["bioconda", "conda-forge", "r", "main", "free"],
                     specs_to_add=[versioned_package],
                 )
                 try:
-                    try:
-                        transaction = solver.solve_for_transaction()
-                    except UnsatisfiableError:
-                        ctx_print(
-                            "Failed to solve installation for {}. Trying the free channel.".format(
-                                versioned_package
-                            ),
-                            verbose,
-                        )
-                        # If we can't solve the environment, try adding a new channel
-                        solver = Solver(
-                            dir,
-                            ["bioconda", "conda-forge", "r", "main", "free"],
-                            specs_to_add=[versioned_package],
-                        )
-                        transaction = solver.solve_for_transaction()
+                    transaction = solver.solve_for_transaction()
                 except Exception as e:
                     # If nothing works, just skip this package
                     ctx_print(
