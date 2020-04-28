@@ -274,10 +274,12 @@ def commands_from_package(
                 if len(new_exes) == 0:
                     ctx_print("Package has no executables. Skipping.", verbose)
                 for exe in new_exes:
-                    with log_around("Exploring {}".format(exe), verbose):
+                    with log_around("Exploring {}".format(exe.name), verbose):
                         try:
                             # Briefly cd into the temp directory, so we don't fill up the cwd with junk
-                            cmd = explore_command([exe.name], cwd=dir)
+                            cmd = explore_command(
+                                [exe.name], run_kwargs={"cwd": dir, "check": False}
+                            )
 
                             # Dump a YAML version of the tool
                             with (out_subdir / exe.name).with_suffix(".yml").open(
