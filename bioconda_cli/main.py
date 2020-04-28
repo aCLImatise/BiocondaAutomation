@@ -58,6 +58,8 @@ def log_around(msg: str, verbose=True, capture=True):
 
     # Indent the stdout/stderr
     if capture:
+        err.seek(0)
+        out.seek(0)
         for line in chain(out.readlines(), err.readlines()):
             print("\t" + line, file=sys.stderr)
 
