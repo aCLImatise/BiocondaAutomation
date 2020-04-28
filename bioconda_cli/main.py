@@ -5,6 +5,7 @@ import os
 import pathlib
 import sys
 import tempfile
+import traceback
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from functools import partial
 from itertools import chain
@@ -257,8 +258,16 @@ def commands_from_package(
                     if exit_on_failure:
                         raise e
                     else:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
                         ctx_print(
-                            "Failed to install {}: {}".format(versioned_package, e),
+                            "Failed to install {} with error:\n{}".format(
+                                versioned_package,
+                                "".join(
+                                    traceback.format_exception(
+                                        exc_type, exc_value, exc_traceback
+                                    )
+                                ),
+                            ),
                             verbose,
                         )
                         flush()
@@ -299,9 +308,15 @@ def commands_from_package(
                             if exit_on_failure:
                                 raise e
                             else:
+                                exc_type, exc_value, exc_traceback = sys.exc_info()
                                 ctx_print(
-                                    "Acclimatising the command {} failed with error `{}`".format(
-                                        exe.name, e
+                                    "Acclimatising the command {} failed with error\n{}".format(
+                                        exe.name,
+                                        "".join(
+                                            traceback.format_exception(
+                                                exc_type, exc_value, exc_traceback
+                                            )
+                                        ),
                                     ),
                                     verbose,
                                 )
