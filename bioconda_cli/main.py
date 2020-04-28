@@ -18,7 +18,6 @@ from acclimatise.yaml import yaml
 from conda.api import Solver
 from conda.cli.python_api import run_command
 from conda.exceptions import UnsatisfiableError
-from conda.models.channel import Channel
 from packaging.version import parse
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
@@ -252,7 +251,11 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                             verbose,
                         )
                         # If we can't solve the environment, try adding a new channel
-                        solver._internal.channels.add(Channel("free"))
+                        solver = Solver(
+                            dir,
+                            ["bioconda", "conda-forge", "r", "main", "free"],
+                            specs_to_add=[versioned_package],
+                        )
                         transaction = solver.solve_for_transaction()
                 except Exception as e:
                     # If nothing works, just skip this package
@@ -295,10 +298,11 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                             (out_subdir / exe.name).with_suffix(".cwl").write_text(cwl)
 
                         except Exception as e:
-                            print(
+                            ctx_print(
                                 "Command {} failed with error {} using the output".format(
                                     exe, e
-                                )
+                                ),
+                                verbose,
                             )
     flush()
 
