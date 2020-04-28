@@ -222,8 +222,6 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
     with log_around("Installing {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
-            # cd into the temp directory, so we don't fill up the cwd with junk
-            os.chdir(dir)
 
             # Create an empty environment
             run_command(
@@ -249,7 +247,12 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
                 for exe in new_exes:
                     with log_around("Exploring {}".format(exe), verbose):
                         try:
+                            # Briefly cd into the temp directory, so we don't fill up the cwd with junk
+                            cwd = os.getcwd()
+                            os.chdir(dir)
                             cmd = explore_command([exe.name])
+                            os.chdir(cwd)
+
                             with (out_subdir / exe.name).with_suffix(".yml").open(
                                 "w"
                             ) as out_fp:
