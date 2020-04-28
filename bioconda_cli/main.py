@@ -17,6 +17,8 @@ from acclimatise import Command, explore_command
 from acclimatise.yaml import yaml
 from conda.api import Solver
 from conda.cli.python_api import run_command
+from conda.exceptions import UnsatisfiableError
+from conda.models.channel import Channel
 from packaging.version import parse
 from tqdm import tqdm
 
@@ -220,7 +222,7 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
 
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
-    with log_around("Installing {}".format(package), verbose=verbose):
+    with log_around("Acclimatising {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
 
             # Create an empty environment
@@ -231,9 +233,23 @@ def commands_from_package(line: str, out: pathlib.Path, verbose=True):
             with activate_env(pathlib.Path(dir)):
                 # Generate the query plan concurrently
                 solver = Solver(
-                    dir, ["bioconda", "conda-forge"], specs_to_add=[versioned_package]
+                    dir,
+                    ["bioconda", "conda-forge", "r", "main"],
+                    specs_to_add=[versioned_package],
                 )
-                transaction = solver.solve_for_transaction()
+                try:
+                    try:
+                        transaction = solver.solve_for_transaction()
+                    except UnsatisfiableError:
+                        # If we can't solve the environment, try adding a new channel
+                        solver._internal.channels.add(Channel("free"))
+                        transaction = solver.solve_for_transaction()
+                except Exception as e:
+                    # If nothing works, just skip this package
+                    ctx_print(
+                        "Failed to install {}: {}".format(versioned_package, e), verbose
+                    )
+                    return
 
                 # We can't run the installs concurrently, because they used the shared conda packages cache
                 with lock:
