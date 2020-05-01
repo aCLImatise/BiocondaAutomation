@@ -24,3 +24,10 @@ jobs:
           pip install -U .[dev]
 
       - uses: pre-commit/action@v1.0.1
+
+      - name: Test CLI
+        run: |
+          find_cli list-packages --test > packages.txt
+          mkdir out/
+          find_cli install packages.txt out/
+          find_cli wrappers out/

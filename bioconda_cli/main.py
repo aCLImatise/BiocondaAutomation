@@ -341,17 +341,14 @@ def generate_wrappers(
             cmd = yaml.load(fp)
 
         if output_dir:
-            stem = pathlib.Path(output_dir) / definition.relative_to(command_dir)
+            output_path = pathlib.Path(output_dir) / definition.parent.relative_to(
+                command_dir
+            )
         else:
-            stem = definition
+            output_path = definition.parent
 
-        # Dump a WDL version of the tool
-        wdl = WdlGenerator().generate_wrapper(cmd)
-        stem.with_suffix(".wdl").write_text(wdl)
-
-        # Dump a CWL version of the tool
-        cwl = CwlGenerator().generate_wrapper(cmd)
-        stem.with_suffix(".cwl").write_text(cwl)
+        WdlGenerator().generate_wrapper(cmd, output_path)
+        CwlGenerator().generate_wrapper(cmd, output_path)
 
 
 def install(packages, out, verbose=False, processes=None, exit_on_failure=False):
