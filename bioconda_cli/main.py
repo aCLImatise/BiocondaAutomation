@@ -98,10 +98,12 @@ def get_parser():
         help="Recursively convert all .yml dumped Commands into tool wrappers",
     )
     cmd_wrappers.add_argument(
-        "dir", type=click.Path(dir_okay=True, file_okay=False, exists=True)
+        "command_dir", type=click.Path(dir_okay=True, file_okay=False, exists=True)
     )
     cmd_wrappers.add_argument(
-        "--out", "-o", type=click.Path(dir_okay=True, file_okay=False, exists=True)
+        "--outputdir-dir",
+        "-o",
+        type=click.Path(dir_okay=True, file_okay=False, exists=True),
     )
     cmd_wrappers.set_defaults(func=generate_wrappers)
 
