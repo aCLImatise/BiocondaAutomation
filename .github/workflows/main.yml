@@ -27,7 +27,9 @@ jobs:
 
       - name: Test CLI
         run: |
+          source /root/.bashrc
           find_cli list-packages --test > packages.txt
           mkdir out/
           find_cli install packages.txt out/
           find_cli wrappers out/
+        shell: bash
