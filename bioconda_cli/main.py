@@ -101,7 +101,7 @@ def get_parser():
         "command_dir", type=click.Path(dir_okay=True, file_okay=False, exists=True)
     )
     cmd_wrappers.add_argument(
-        "--outputdir-dir",
+        "--output-dir",
         "-o",
         type=click.Path(dir_okay=True, file_okay=False, exists=True),
     )
