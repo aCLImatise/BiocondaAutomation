@@ -329,7 +329,9 @@ def commands_from_package(
 
 
 def generate_wrappers(
-    command_dir: os.PathLike, output_dir: Optional[os.PathLike] = None
+    command_dir: os.PathLike,
+    output_dir: Optional[os.PathLike] = None,
+    verbose: bool = True,
 ):
     """
     Recursively convert all .yml dumped Commands into tool wrappers
@@ -337,6 +339,7 @@ def generate_wrappers(
     :param output_dir: If provided, output files in the same directory structure, but in this directory
     """
     for definition in pathlib.Path(command_dir).rglob("*.yml"):
+        ctx_print("Converting {}".format(definition), verbose)
         with definition.open() as fp:
             cmd = yaml.load(fp)
 
