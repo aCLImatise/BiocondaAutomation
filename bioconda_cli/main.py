@@ -103,7 +103,7 @@ def get_parser():
     cmd_wrappers.add_argument(
         "--out", "-o", type=click.Path(dir_okay=True, file_okay=False, exists=True)
     )
-    cmd_wrappers.set_defaults(func=cmd_wrappers)
+    cmd_wrappers.set_defaults(func=generate_wrappers)
 
     return parser
 
