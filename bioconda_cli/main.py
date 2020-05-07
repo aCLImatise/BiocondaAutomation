@@ -329,6 +329,14 @@ def commands_from_package(
     flush()
 
 
+def exhaust(gen):
+    """
+    Iterates a generator until it's complete, and discards the items
+    """
+    for _ in gen:
+        pass
+
+
 def generate_wrapper(
     command: pathlib.Path,
     command_dir: pathlib.Path,
@@ -354,8 +362,8 @@ def generate_wrapper(
 
         ctx_print("Output dir is {}".format(output_path))
 
-        WdlGenerator().generate_tree(cmd, output_path)
-        CwlGenerator().generate_tree(cmd, output_path)
+        exhaust(WdlGenerator().generate_tree(cmd, output_path))
+        exhaust(CwlGenerator().generate_tree(cmd, output_path))
 
 
 def wrappers(
@@ -372,9 +380,9 @@ def wrappers(
         packages = pathlib.Path(command_dir).rglob("*.yml")
         func = partial(
             generate_wrapper,
-            output_dir=output_dir,
+            output_dir=pathlib.Path(output_dir).resolve(),
             verbose=verbose,
-            command_dir=command_dir,
+            command_dir=pathlib.Path(command_dir).resolve(),
         )
         pool.map(func, packages)
 
