@@ -13,13 +13,12 @@ from logging import ERROR, getLogger
 from multiprocessing import Lock, Pool
 from typing import List, Optional, Tuple
 
-from conda.api import Solver
-from conda.cli.python_api import run_command
-from conda.exceptions import UnsatisfiableError
-
 import click
 from acclimatise import Command, CwlGenerator, WdlGenerator, explore_command
 from acclimatise.yaml import yaml
+from conda.api import Solver
+from conda.cli.python_api import run_command
+from conda.exceptions import UnsatisfiableError
 from packaging.version import parse
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
@@ -352,8 +351,8 @@ def generate_wrappers(
         else:
             output_path = definition.parent
 
-        WdlGenerator().generate_wrapper(cmd, output_path)
-        CwlGenerator().generate_wrapper(cmd, output_path)
+        WdlGenerator().generate_tree(cmd, output_path)
+        CwlGenerator().generate_tree(cmd, output_path)
 
 
 def install(packages, out, verbose=False, processes=None, exit_on_failure=False):
