@@ -329,7 +329,36 @@ def commands_from_package(
     flush()
 
 
-def generate_wrappers(
+def generate_wrapper(
+    command: pathlib.Path,
+    command_dir: pathlib.Path,
+    output_dir: Optional[os.PathLike] = None,
+    verbose: bool = True,
+):
+    """
+    Recursively convert all .yml dumped Commands into tool wrappers
+    :param command_dir: Root directory to convert from
+    :param command: Path to a YAML file to convert
+    :param output_dir: If provided, output files in the same directory structure, but in this directory
+    """
+    with log_around("Converting {}".format(command), verbose):
+        with command.open() as fp:
+            cmd = yaml.load(fp)
+
+        if output_dir:
+            output_path = pathlib.Path(output_dir) / command.parent.relative_to(
+                command_dir
+            )
+        else:
+            output_path = command.parent
+
+        ctx_print("Output dir is {}".format(output_path))
+
+        WdlGenerator().generate_tree(cmd, output_path)
+        CwlGenerator().generate_tree(cmd, output_path)
+
+
+def wrappers(
     command_dir: os.PathLike,
     output_dir: Optional[os.PathLike] = None,
     verbose: bool = True,
@@ -339,20 +368,15 @@ def generate_wrappers(
     :param command_dir: Directory to convert from
     :param output_dir: If provided, output files in the same directory structure, but in this directory
     """
-    for definition in pathlib.Path(command_dir).rglob("*.yml"):
-        ctx_print("Converting {}".format(definition), verbose)
-        with definition.open() as fp:
-            cmd = yaml.load(fp)
-
-        if output_dir:
-            output_path = pathlib.Path(output_dir) / definition.parent.relative_to(
-                command_dir
-            )
-        else:
-            output_path = definition.parent
-
-        WdlGenerator().generate_tree(cmd, output_path)
-        CwlGenerator().generate_tree(cmd, output_path)
+    with Pool() as pool:
+        packages = pathlib.Path(command_dir).rglob("*.yml")
+        func = partial(
+            generate_wrapper,
+            output_dir=output_dir,
+            verbose=verbose,
+            command_dir=command_dir,
+        )
+        pool.map(func, packages)
 
 
 def install(packages, out, verbose=False, processes=None, exit_on_failure=False):
