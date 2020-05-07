@@ -362,6 +362,8 @@ def generate_wrapper(
         else:
             output_path = command.parent
 
+        output_path.mkdir(parents=True, exist_ok=True)
+
         ctx_print("Output dir is {}".format(output_path))
 
         exhaust(WdlGenerator().generate_tree(cmd, output_path))
