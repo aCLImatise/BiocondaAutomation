@@ -349,6 +349,8 @@ def generate_wrapper(
     :param command: Path to a YAML file to convert
     :param output_dir: If provided, output files in the same directory structure, but in this directory
     """
+    command = command.resolve()
+
     with log_around("Converting {}".format(command), verbose):
         with command.open() as fp:
             cmd = yaml.load(fp)
