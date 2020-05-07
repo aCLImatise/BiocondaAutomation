@@ -104,7 +104,7 @@ def get_parser():
         "-o",
         type=click.Path(dir_okay=True, file_okay=False, exists=True),
     )
-    cmd_wrappers.set_defaults(func=generate_wrappers)
+    cmd_wrappers.set_defaults(func=wrappers)
 
     return parser
 
