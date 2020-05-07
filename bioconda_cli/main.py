@@ -369,12 +369,16 @@ def generate_wrapper(
             exhaust(CwlGenerator().generate_tree(cmd, output_path))
         except Exception:
             trace = sys.exc_info()
+            trace_str = "".join(traceback.format_exception(*trace))
             ctx_print(
                 "Converting the command {} failed with error\n{}".format(
-                    command, "".join(traceback.format_exception(*trace)),
+                    command, trace_str,
                 ),
                 verbose,
             )
+
+            # Log the error to a file
+            command.with_suffix(".error").write_text(trace_str)
 
 
 def wrappers(
@@ -391,7 +395,7 @@ def wrappers(
         packages = pathlib.Path(command_dir).rglob("*.yml")
         func = partial(
             generate_wrapper,
-            output_dir=pathlib.Path(output_dir).resolve(),
+            output_dir=pathlib.Path(output_dir).resolve() if output_dir else None,
             verbose=verbose,
             command_dir=pathlib.Path(command_dir).resolve(),
         )
