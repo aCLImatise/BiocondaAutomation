@@ -364,10 +364,17 @@ def generate_wrapper(
 
         output_path.mkdir(parents=True, exist_ok=True)
 
-        ctx_print("Output dir is {}".format(output_path))
-
-        exhaust(WdlGenerator().generate_tree(cmd, output_path))
-        exhaust(CwlGenerator().generate_tree(cmd, output_path))
+        try:
+            exhaust(WdlGenerator().generate_tree(cmd, output_path))
+            exhaust(CwlGenerator().generate_tree(cmd, output_path))
+        except Exception:
+            trace = sys.exc_info()
+            ctx_print(
+                "Converting the command {} failed with error\n{}".format(
+                    command, "".join(traceback.format_exception(*trace)),
+                ),
+                verbose,
+            )
 
 
 def wrappers(
