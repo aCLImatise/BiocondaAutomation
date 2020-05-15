@@ -219,7 +219,7 @@ def list_packages(test=False, last_spec=None, verbose=True, filter_r=False):
     packages = set()
 
     # The package names are keys to the output dict
-    for key, versions in json.loads(stdout).items():
+    for key, versions in sorted(json.loads(stdout).items()):
         if filter_r and (key.startswith("r-") or key.startswith("bioconductor-")):
             continue
         latest_version = max(versions, key=lambda v: parse(v["version"]))
