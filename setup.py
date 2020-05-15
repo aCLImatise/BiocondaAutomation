@@ -12,10 +12,5 @@ setup(
         "tqdm",
     ],
     extras_require={"dev": ["pytest", "pre-commit"],},
-    entry_points={
-        "console_scripts": [
-            "find_cli = bioconda_cli.main:main",
-            # more script entry points ...
-        ],
-    },
+    entry_points={"console_scripts": ["find_cli = bioconda_cli.main:main",],},
 )

@@ -315,17 +315,19 @@ def commands_from_package(
                                 raise e
                             else:
                                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                                ctx_print(
-                                    "Acclimatising the command {} failed with error\n{}".format(
-                                        exe.name,
-                                        "".join(
-                                            traceback.format_exception(
-                                                exc_type, exc_value, exc_traceback
-                                            )
-                                        ),
+                                message = "Acclimatising the command {} failed with error\n{}".format(
+                                    exe.name,
+                                    "".join(
+                                        traceback.format_exception(
+                                            exc_type, exc_value, exc_traceback
+                                        )
                                     ),
-                                    verbose,
                                 )
+                                # Log the error to a file, and also stderr
+                                (out_subdir / exe.name).with_suffix(
+                                    ".error.txt"
+                                ).write_text(message)
+                                ctx_print(message, verbose)
     flush()
 
 
