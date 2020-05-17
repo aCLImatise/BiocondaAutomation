@@ -74,6 +74,13 @@ def get_parser():
         help="Use this many processes instead of all the available CPUs",
     )
     cmd_install.add_argument(
+        "--max-tasks",
+        "-m",
+        type=int,
+        default=None,
+        help="The number of packages each process will analyse before it is replaced with a fresh worker process",
+    )
+    cmd_install.add_argument(
         "--exit-on-failure",
         "-x",
         action="store_true",
@@ -406,10 +413,12 @@ def wrappers(
         pool.map(func, packages)
 
 
-def install(packages, out, verbose=False, processes=None, exit_on_failure=False):
+def install(
+    packages, out, verbose=False, processes=None, exit_on_failure=False, max_tasks=None
+):
     # Iterate each package in the input file
     with open(packages) as fp:
-        with Pool(processes) as pool:
+        with Pool(processes, maxtasksperchild=max_tasks) as pool:
             lines = fp.readlines()
             func = partial(
                 commands_from_package,
