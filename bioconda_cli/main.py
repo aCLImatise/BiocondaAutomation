@@ -1,28 +1,11 @@
-import argparse
-import io
-import json
-import os
-import pathlib
-import sys
-import tempfile
-import traceback
-from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from functools import partial
-from itertools import chain
-from logging import ERROR, getLogger
-from multiprocessing import Lock, Pool
-from typing import List, Optional, Tuple
+"""
+CLI for executing aCLImatise over Bioconda
+"""
+from multiprocessing import Pool
 
-import click
-from acclimatise import Command, CwlGenerator, WdlGenerator, explore_command
-from acclimatise.yaml import yaml
-from conda.api import Solver
-from conda.cli.python_api import run_command
-from conda.exceptions import UnsatisfiableError
-from packaging.version import parse
+from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
 
-# Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
-lock = Lock()
+from .util import *
 
 # This might make conda a bit quieter
 getLogger("conda").setLevel(ERROR)
@@ -116,98 +99,6 @@ def get_parser():
     return parser
 
 
-def flush():
-    sys.stdout.flush()
-    sys.stderr.flush()
-
-
-def ctx_print(msg, verbose=True):
-    if verbose:
-        print(msg, file=sys.stderr)
-
-
-@contextmanager
-def log_around(msg: str, verbose=True, capture=True):
-    """
-    Wraps a long function invocation with a message like:
-    "Running long process... done"
-    """
-    # Skip this unless we're in verbose mode
-    if not verbose:
-        yield
-        return
-
-    # Store the stdout and stderr to avoid clogging up the logs
-    err = io.StringIO()
-    out = io.StringIO()
-    print(msg + "...", end="", file=sys.stderr)
-    with redirect_stderr(err), redirect_stdout(out):
-        yield
-    print("Done.", file=sys.stderr)
-
-    # Indent the stdout/stderr
-    if capture:
-        err.seek(0)
-        out.seek(0)
-        for line in chain(out.readlines(), err.readlines()):
-            print("\t" + line, file=sys.stderr, end="")
-
-
-def get_conda_binaries(verbose):
-    conda_env = os.environ.get("CONDA_PREFIX")
-    if conda_env is None:
-        raise Exception("You must be in a conda environment to run this")
-
-    ctx_print("Conda env is {}".format(conda_env), verbose)
-    return set((pathlib.Path(conda_env) / "bin").iterdir())
-
-
-def get_package_binaries(package, version) -> List[pathlib.Path]:
-    """
-    Given an already installed package, lists the binaries provided by it
-    """
-    conda_env = os.environ.get("CONDA_PREFIX")
-    if conda_env is None:
-        raise Exception("You must be in a conda environment to run this")
-    env_path = pathlib.Path(conda_env)
-
-    metadata = list(
-        (env_path / "conda-meta").glob("{}-{}*.json".format(package, version))
-    )
-
-    if len(metadata) > 1:
-        raise Exception("Multiple packages matched the package/version pair")
-    if len(metadata) == 0:
-        raise Exception("No installed packages matched the package/version pair")
-
-    # The binaries in a given package are listed in the files key of the metadata file
-    with metadata[0].open() as fp:
-        parsed = json.load(fp)
-        # Only return binaries, not just any package file. Their actual location is relative to the prefix
-        return [env_path / f for f in parsed["files"] if f.startswith("bin/")]
-
-
-@contextmanager
-def activate_env(env: pathlib.Path):
-    env_backup = os.environ.copy()
-
-    # Temporarily set some variables
-    os.environ["CONDA_PREFIX"] = str(env)
-    os.environ["CONDA_SHLVL"] = "2"
-    os.environ["PATH"] = str(env / "bin") + ":" + os.environ["PATH"]
-    os.environ["CONDA_PREFIX_1"] = env_backup["CONDA_PREFIX"]
-
-    # Do some action
-    yield
-
-    # Then reset those variables
-    os.environ.update(env_backup)
-
-
-def list_bin(ctx):
-    print("\n".join([str(x) for x in get_conda_binaries(ctx)]))
-
-
 def list_packages(test=False, last_spec=None, verbose=True, filter_r=False):
     with log_around("Listing packages", capture=False, verbose=verbose):
         stdout, stderr, retcode = run_command(
@@ -262,90 +153,18 @@ def commands_from_package(
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
     with log_around("Acclimatising {}".format(package), verbose=verbose):
         with tempfile.TemporaryDirectory() as dir:
-
-            # Create an empty environment
-            run_command(
-                "create", "--yes", "--quiet", "--prefix", dir,
+            install_package(
+                versioned_package, dir, out_subdir, verbose, exit_on_failure
             )
-
-            with activate_env(pathlib.Path(dir)):
-                # Generate the query plan concurrently
-                solver = Solver(
-                    dir,
-                    ["bioconda", "conda-forge", "r", "main", "free"],
-                    specs_to_add=[versioned_package],
+            new_exes = get_package_binaries(package, version)
+            # Acclimatise each new executable
+            if len(new_exes) == 0:
+                ctx_print("Package has no executables. Skipping.", verbose)
+            for exe in new_exes:
+                acclimatise_exe(
+                    exe, out_subdir, verbose=verbose, exit_on_failure=exit_on_failure
                 )
-                try:
-                    transaction = solver.solve_for_transaction()
-                except Exception as e:
-                    if exit_on_failure:
-                        raise e
-                    else:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        ctx_print(
-                            "Failed to install {} with error:\n{}".format(
-                                versioned_package,
-                                "".join(
-                                    traceback.format_exception(
-                                        exc_type, exc_value, exc_traceback
-                                    )
-                                ),
-                            ),
-                            verbose,
-                        )
-                        flush()
-                        return
-
-                # We can't run the installs concurrently, because they used the shared conda packages cache
-                with lock:
-                    transaction.download_and_extract()
-                    transaction.execute()
-
-                # Acclimatise each new executable
-                new_exes = get_package_binaries(package, version)
-                if len(new_exes) == 0:
-                    ctx_print("Package has no executables. Skipping.", verbose)
-                for exe in new_exes:
-                    with log_around("Exploring {}".format(exe.name), verbose):
-                        try:
-                            # Briefly cd into the temp directory, so we don't fill up the cwd with junk
-                            cmd = explore_command(
-                                [exe.name], run_kwargs={"cwd": dir, "check": False}
-                            )
-
-                            # Dump a YAML version of the tool
-                            with (out_subdir / exe.name).with_suffix(".yml").open(
-                                "w"
-                            ) as out_fp:
-                                yaml.dump(cmd, out_fp)
-
-                        except Exception as e:
-                            if exit_on_failure:
-                                raise e
-                            else:
-                                exc_type, exc_value, exc_traceback = sys.exc_info()
-                                message = "Acclimatising the command {} failed with error\n{}".format(
-                                    exe.name,
-                                    "".join(
-                                        traceback.format_exception(
-                                            exc_type, exc_value, exc_traceback
-                                        )
-                                    ),
-                                )
-                                # Log the error to a file, and also stderr
-                                (out_subdir / exe.name).with_suffix(
-                                    ".error.txt"
-                                ).write_text(message)
-                                ctx_print(message, verbose)
     flush()
-
-
-def exhaust(gen):
-    """
-    Iterates a generator until it's complete, and discards the items
-    """
-    for _ in gen:
-        pass
 
 
 def generate_wrapper(
@@ -376,20 +195,16 @@ def generate_wrapper(
         output_path.mkdir(parents=True, exist_ok=True)
 
         try:
-            exhaust(WdlGenerator().generate_tree(cmd, output_path))
-            exhaust(CwlGenerator().generate_tree(cmd, output_path))
-        except Exception:
-            trace = sys.exc_info()
-            trace_str = "".join(traceback.format_exception(*trace))
-            ctx_print(
-                "Converting the command {} failed with error\n{}".format(
-                    command, trace_str,
-                ),
-                verbose,
+            for subclass in WrapperGenerator.__subclasses__():
+                gen = subclass()
+                exhaust(gen.generate_tree(cmd, output_path))
+        except Exception as e:
+            handle_exception(
+                e,
+                msg="Converting the command {}".format(command),
+                log_path=command.with_suffix(".error"),
+                print=verbose,
             )
-
-            # Log the error to a file
-            command.with_suffix(".error").write_text(trace_str)
 
 
 def wrappers(
