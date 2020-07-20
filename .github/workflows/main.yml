@@ -22,6 +22,7 @@ jobs:
         run: |
           pip install -U pip setuptools wheel
           pip install -U .[dev]
+          python -m spacy download en
 
       - uses: pre-commit/action@v1.0.1
 
