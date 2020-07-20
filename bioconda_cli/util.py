@@ -199,19 +199,15 @@ def acclimatise_exe(
     out_dir: pathlib.Path,
     verbose: bool = True,
     exit_on_failure: bool = False,
+    run_kwargs: dict = {},
 ):
     """
     Given an executable path, acclimatises it, and dumps the results in out_dir
-    :param exe:
-    :param out_dir:
-    :param verbose:
-    :param exit_on_failure:
-    :return:
     """
     with log_around("Exploring {}".format(exe.name), verbose):
         try:
             # Briefly cd into the temp directory, so we don't fill up the cwd with junk
-            cmd = explore_command([exe.name], run_kwargs={"cwd": dir, "check": False})
+            cmd = explore_command([exe.name], run_kwargs={"check": False, **run_kwargs})
 
             # Dump a YAML version of the tool
             with (out_dir / exe.name).with_suffix(".yml").open("w") as out_fp:

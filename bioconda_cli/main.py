@@ -5,7 +5,7 @@ from multiprocessing import Pool
 
 from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
 
-from .util import *
+from bioconda_cli.util import *
 
 # This might make conda a bit quieter
 getLogger("conda").setLevel(ERROR)
@@ -156,14 +156,19 @@ def commands_from_package(
             install_package(
                 versioned_package, dir, out_subdir, verbose, exit_on_failure
             )
-            new_exes = get_package_binaries(package, version)
-            # Acclimatise each new executable
-            if len(new_exes) == 0:
-                ctx_print("Package has no executables. Skipping.", verbose)
-            for exe in new_exes:
-                acclimatise_exe(
-                    exe, out_subdir, verbose=verbose, exit_on_failure=exit_on_failure
-                )
+            with activate_env(pathlib.Path(dir)):
+                new_exes = get_package_binaries(package, version)
+                # Acclimatise each new executable
+                if len(new_exes) == 0:
+                    ctx_print("Package has no executables. Skipping.", verbose)
+                for exe in new_exes:
+                    acclimatise_exe(
+                        exe,
+                        out_subdir,
+                        verbose=verbose,
+                        exit_on_failure=exit_on_failure,
+                        run_kwargs={"cwd": dir},
+                    )
     flush()
 
 
