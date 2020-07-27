@@ -19,9 +19,6 @@ from typing import List, Optional, Tuple
 import click
 from acclimatise import Command, CwlGenerator, WdlGenerator, explore_command
 from acclimatise.yaml import yaml
-from conda.api import Solver
-from conda.cli.python_api import run_command
-from conda.exceptions import UnsatisfiableError
 from packaging.version import parse
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
