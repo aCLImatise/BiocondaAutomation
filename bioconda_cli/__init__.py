@@ -1,20 +1,21 @@
 from multiprocessing import Pool
 
 from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
-from bioconda2biocontainer.biocontainer import (
-    find_latest_image,
-    find_package_by_name,
-    find_package_by_term,
-)
+
+import requests
 
 from .util import *
 
 
 def list_images(test=False, last_spec=None, verbose=True, filter_r=False):
     images = set()
+    result = requests.get(
+        "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
+        params=dict(toolClass="Docker", limit=10000),
+    )
 
     # The package names are keys to the output dict
-    for package in find_package_by_term(""):
+    for package in result.json():
         if filter_r and (
             package["name"].startswith("r-")
             or package["name"].startswith("bioconductor-")
@@ -23,15 +24,11 @@ def list_images(test=False, last_spec=None, verbose=True, filter_r=False):
         latest_version = max(
             package["versions"], key=lambda v: parse(v["meta_version"])
         )
-        for image in find_latest_image(
-            package["name"],
-            latest_version["meta_version"],
-            all=True,
-            sort_by_size=False,
-            sort_by_download=False,
-            container_type=None,
-            registry_host=None,
-        ):
+        package_images = sorted(
+            requests.get(latest_version["url"]).json()["images"],
+            key=lambda image: image["registry_host"] == "registry.hub.docker.com",
+        )
+        for image in package_images:
             if "image_type" not in image or image["image_type"] == "Docker":
                 images.add(image["image_name"])
                 break

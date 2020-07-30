@@ -10,7 +10,7 @@ setup(
         "ruamel.yaml==0.16.5",
         "packaging",
         "tqdm",
-        "pyswagger",
+        "requests",
     ],
     extras_require={"dev": ["pytest", "pre-commit"],},
     entry_points={"console_scripts": ["find_cli = bioconda_cli.main:main",],},
