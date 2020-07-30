@@ -2,7 +2,7 @@ name: CI
 
 on:
   # Also run whenever we push
-  [push, pull-request]
+  [push, pull_request]
 
 jobs:
   build:
