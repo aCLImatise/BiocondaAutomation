@@ -1,12 +1,8 @@
 name: CI
 
 on:
-  # Run on the first of every month
-  schedule:
-    - cron: "0 0 1 * *"
-
   # Also run whenever we push
-  push:
+  [push, pull-request]
 
 jobs:
   build:
