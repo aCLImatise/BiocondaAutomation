@@ -95,6 +95,7 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
         # Filter out .PACKAGENAME-post-link.sh and .PACKAGENAME-pre-unlink.sh
         return [env_path / f for f in parsed["files"] if 
                 f.startswith("bin/") and
+                not f.endswith(".%s-pre-link.sh" % package) and
                 not f.endswith(".%s-post-link.sh" % package) and
                 not f.endswith(".%s-pre-unlink.sh" % package)]
 
