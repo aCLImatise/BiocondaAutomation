@@ -90,8 +90,16 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
     # The binaries in a given package are listed in the files key of the metadata file
     with metadata[0].open() as fp:
         parsed = json.load(fp)
-        # Only return binaries, not just any package file. Their actual location is relative to the prefix
-        return [env_path / f for f in parsed["files"] if f.startswith("bin/")]
+        # Only return binaries, not just any package file.
+        # Their actual location is relative to the prefix
+        # Filter out .PACKAGENAME-post-link.sh and .PACKAGENAME-pre-unlink.sh
+        return [
+            env_path / f
+            for f in parsed["files"]
+            if f.startswith("bin/")
+            and not f.endswith(".%s-post-link.sh" % package)
+            and not f.endswith(".%s-pre-unlink.sh" % package)
+        ]
 
 
 @contextmanager
@@ -151,6 +159,10 @@ def install_package(
     :param exit:
     :return:
     """
+    if os.path.exists(env_dir):
+        return
+    else:
+        os.makedirs(env_dir)
     # Create an empty environment
     run_command(
         "create", "--yes", "--quiet", "--prefix", env_dir,
@@ -161,7 +173,7 @@ def install_package(
         solver = Solver(
             str(env_dir),
             ["bioconda", "conda-forge", "r", "main", "free"],
-            specs_to_add=[versioned_package],
+            specs_to_add=[versioned_package, "argparse2tool"],
         )
         try:
             transaction = solver.solve_for_transaction()
