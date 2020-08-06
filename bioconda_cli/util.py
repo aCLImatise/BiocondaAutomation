@@ -90,13 +90,16 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
     # The binaries in a given package are listed in the files key of the metadata file
     with metadata[0].open() as fp:
         parsed = json.load(fp)
-        # Only return binaries, not just any package file. 
+        # Only return binaries, not just any package file.
         # Their actual location is relative to the prefix
         # Filter out .PACKAGENAME-post-link.sh and .PACKAGENAME-pre-unlink.sh
-        return [env_path / f for f in parsed["files"] if 
-                f.startswith("bin/") and
-                not f.endswith(".%s-post-link.sh" % package) and
-                not f.endswith(".%s-pre-unlink.sh" % package)]
+        return [
+            env_path / f
+            for f in parsed["files"]
+            if f.startswith("bin/")
+            and not f.endswith(".%s-post-link.sh" % package)
+            and not f.endswith(".%s-pre-unlink.sh" % package)
+        ]
 
 
 @contextmanager

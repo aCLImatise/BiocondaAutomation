@@ -1,8 +1,8 @@
 """
 CLI for executing aCLImatise over Bioconda
 """
-from multiprocessing import Pool
 import subprocess
+from multiprocessing import Pool
 
 from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
 
@@ -121,7 +121,7 @@ def list_packages(test=False, last_spec=None, verbose=True, filter_r=False):
         if filter_r and (key.startswith("r-") or key.startswith("bioconductor-")):
             continue
         latest_version = max(versions, key=lambda v: parse(v["version"]))
-        
+
         py = False
         for d in latest_version["depends"]:
             if "python" in d:
@@ -164,38 +164,39 @@ def commands_from_package(
     with log_around("Acclimatising {}".format(package), verbose=verbose):
         dir = "/tmp/bioconda_cli/%s" % versioned_package
         if 1:
-        #with tempfile.TemporaryDirectory() as dir:
+            # with tempfile.TemporaryDirectory() as dir:
             install_package(
                 versioned_package, dir, out_subdir, verbose, exit_on_failure
             )
             with activate_env(pathlib.Path(dir)):
                 new_exes = get_package_binaries(package, version)
                 # Acclimatise each new executable
-#                 if len(new_exes) == 0:
-#                     ctx_print("Package has no executables. Skipping.", verbose)
-#                 for exe in new_exes:
-#                     print("proecessing exe %s" % exe)
-#                     acclimatise_exe(
-#                         exe,
-#                         out_subdir,
-#                         verbose=verbose,
-#                         exit_on_failure=exit_on_failure,
-#                         run_kwargs={"cwd": dir},
-#                     )
+            #                 if len(new_exes) == 0:
+            #                     ctx_print("Package has no executables. Skipping.", verbose)
+            #                 for exe in new_exes:
+            #                     print("proecessing exe %s" % exe)
+            #                     acclimatise_exe(
+            #                         exe,
+            #                         out_subdir,
+            #                         verbose=verbose,
+            #                         exit_on_failure=exit_on_failure,
+            #                         run_kwargs={"cwd": dir},
+            #                     )
             for exe in new_exes:
                 cmd = """. /home/berntm/miniconda3/etc/profile.d/conda.sh &&
 conda activate %s &&
 PYTHONPATH="$(argparse2tool)" %s --generate_galaxy_xml
-""" % (dir, exe)
+""" % (
+                    dir,
+                    exe,
+                )
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True)
                 if proc.returncode:
                     print("failed for %s %s" % (exe, proc))
                     continue
-                ofn = pathlib.Path("%s-%s.xml" % (package,
-                                                  os.path.basename(exe)))
+                ofn = pathlib.Path("%s-%s.xml" % (package, os.path.basename(exe)))
                 with open(out_subdir / ofn, "wb") as ofh:
                     ofh.write(proc.stdout)
-
 
     flush()
 
