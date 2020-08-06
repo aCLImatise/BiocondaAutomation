@@ -2,7 +2,7 @@ name: CI
 
 on:
   # Also run whenever we push
-  [push, pull-request]
+  [push, pull_request]
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
-          pip install -U .[dev]
+          pip install -U .[dev] --ignore-installed
           python -m spacy download en
 
       - uses: pre-commit/action@v1.0.1

@@ -90,14 +90,21 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
     # The binaries in a given package are listed in the files key of the metadata file
     with metadata[0].open() as fp:
         parsed = json.load(fp)
-        forbidden = set([".{}-pre-link.sh".format(package),
-                        ".{}-post-link.sh".format(package),
-                        ".{}-pre-unlink.sh".format(package)])
-        # Only return binaries, not just any package file. 
+        forbidden = set(
+            [
+                ".{}-pre-link.sh".format(package),
+                ".{}-post-link.sh".format(package),
+                ".{}-pre-unlink.sh".format(package)
+            ]
+        )
+        # Only return binaries, not just any package file.
         # Their actual location is relative to the prefix
         # Filter out .PACKAGENAME-post-link.sh and .PACKAGENAME-pre-unlink.sh
-        return [env_path / f for f in parsed["files"] if 
-                f.startswith("bin/") and f not in forbidden]
+        return [
+            env_path / f
+            for f in parsed["files"]
+            if f.startswith("bin/") and f not in forbidden
+        ]
 
 
 @contextmanager
