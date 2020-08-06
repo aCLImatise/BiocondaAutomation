@@ -1,12 +1,8 @@
 name: CI
 
 on:
-  # Run on the first of every month
-  schedule:
-    - cron: "0 0 1 * *"
-
   # Also run whenever we push
-  push:
+  [push, pull_request]
 
 jobs:
   build:
@@ -21,7 +17,7 @@ jobs:
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
-          pip install -U .[dev]
+          pip install -U .[dev] --ignore-installed
           python -m spacy download en
 
       - uses: pre-commit/action@v1.0.1
