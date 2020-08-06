@@ -14,15 +14,10 @@ jobs:
       - name: Apt requirements
         run: apt-get update && apt-get install build-essential -y
 
-      - name: Set up Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
-
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
-          pip install -U .[dev]
+          pip install -U .[dev] --ignore-installed
           python -m spacy download en
 
       - uses: pre-commit/action@v1.0.1
