@@ -8,30 +8,25 @@ from .util import *
 
 
 def list_images(test=False, last_spec=None, verbose=True, filter_r=False):
-    images = set()
-    result = requests.get(
-        "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
-        params=dict(toolClass="Docker", limit=10000),
-    )
 
     # The package names are keys to the output dict
-    for package in result.json():
-        if filter_r and (
-            package["name"].startswith("r-")
-            or package["name"].startswith("bioconductor-")
-        ):
-            continue
-        latest_version = max(
-            package["versions"], key=lambda v: parse(v["meta_version"])
-        )
-        package_images = sorted(
-            requests.get(latest_version["url"]).json()["images"],
-            key=lambda image: image["registry_host"] == "registry.hub.docker.com",
-        )
-        for image in package_images:
-            if "image_type" not in image or image["image_type"] == "Docker":
-                images.add(image["image_name"])
-                break
+    if test:
+        images = {"bwa=0.7.17"}
+    else:
+        images = set()
+        for package in requests.get(
+            "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
+            params=dict(toolClass="Docker", limit=10000),
+        ).json():
+            if filter_r and (
+                package["name"].startswith("r-")
+                or package["name"].startswith("bioconductor-")
+            ):
+                continue
+            latest_version = max(
+                package["versions"], key=lambda v: parse(v["meta_version"])
+            )
+            images.add("{}={}".format(package["name"], latest_version["meta_version"]))
 
     # The previous spec file basically defines a set of versions *not* to use
     if last_spec is not None:
@@ -54,6 +49,15 @@ def commands_from_package(
     """
     versioned_package = line.strip()
     package, version = versioned_package.split("=")
+
+    package_images = sorted(
+        requests.get(latest_version["url"]).json()["images"],
+        key=lambda image: image["registry_host"] == "registry.hub.docker.com",
+    )
+    for image in package_images:
+        if "image_type" not in image or image["image_type"] == "Docker":
+            images.add(image["image_name"])
+            break
 
     # Each package should have its own subdirectory
     out_subdir = (out / package) / version
