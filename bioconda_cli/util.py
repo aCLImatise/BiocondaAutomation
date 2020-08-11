@@ -17,12 +17,16 @@ from multiprocessing import Lock, Pool
 from typing import List, Optional, Tuple
 
 import click
+import docker
 from acclimatise import Command, CwlGenerator, WdlGenerator, explore_command
 from acclimatise.yaml import yaml
+from docker.models.containers import Container
 from packaging.version import parse
 
 # Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
 lock = Lock()
+
+logger = getLogger(__name__)
 
 
 def ctx_print(msg, verbose=True):
@@ -66,46 +70,24 @@ def get_conda_binaries(verbose):
     return set((pathlib.Path(conda_env) / "bin").iterdir())
 
 
-def get_package_binaries(package, version) -> List[pathlib.Path]:
+def get_package_binaries(
+    container: Container, package: str, version: str
+) -> List[pathlib.Path]:
     """
     Given an already installed package, lists the binaries provided by it
     """
-    conda_env = os.environ.get("CONDA_PREFIX")
-    if conda_env is None:
-        raise Exception("You must be in a conda environment to run this")
-    env_path = pathlib.Path(conda_env)
-
-    metadata = list(
-        (env_path / "conda-meta").glob("{}-{}*.json".format(package, version))
+    _, root = container.exec_run("bash -l -c 'printenv CONDA_ROOT'")
+    code, output = container.exec_run(
+        ["{}/conda-meta/{}-{}*.json".format(root, package, version)],
+        demux=True,
+        stderr=True,
     )
-
-    if len(metadata) > 1:
-        raise Exception("Multiple packages matched the package/version pair")
-    if len(metadata) == 0:
-        raise Exception("No installed packages matched the package/version pair")
+    stdout, stderr = output
 
     # The binaries in a given package are listed in the files key of the metadata file
-    with metadata[0].open() as fp:
-        parsed = json.load(fp)
-        # Only return binaries, not just any package file. Their actual location is relative to the prefix
-        return [env_path / f for f in parsed["files"] if f.startswith("bin/")]
-
-
-@contextmanager
-def activate_env(env: pathlib.Path):
-    env_backup = os.environ.copy()
-
-    # Temporarily set some variables
-    os.environ["CONDA_PREFIX"] = str(env)
-    os.environ["CONDA_SHLVL"] = "2"
-    os.environ["PATH"] = str(env / "bin") + ":" + os.environ["PATH"]
-    os.environ["CONDA_PREFIX_1"] = env_backup["CONDA_PREFIX"]
-
-    # Do some action
-    yield
-
-    # Then reset those variables
-    os.environ.update(env_backup)
+    parsed = json.loads(stdout)
+    # Only return binaries, not just any package file. Their actual location is relative to the prefix
+    return [pathlib.Path(root) / f for f in parsed["files"] if f.startswith("bin/")]
 
 
 def list_bin(ctx):
@@ -132,52 +114,6 @@ def handle_exception(
         ctx_print(message, print)
 
 
-def install_package(
-    versioned_package: str,
-    env_dir: pathlib.Path,
-    out_dir: pathlib.Path,
-    verbose: bool = True,
-    exit: bool = False,
-):
-    """
-    Installs a package into an isolated environment
-    :param versioned_package:
-    :param env_dir:
-    :param out_dir:
-    :param verbose:
-    :param exit:
-    :return:
-    """
-    # Create an empty environment
-    run_command(
-        "create", "--yes", "--quiet", "--prefix", env_dir,
-    )
-
-    with activate_env(pathlib.Path(env_dir)):
-        # Generate the query plan concurrently
-        solver = Solver(
-            str(env_dir),
-            ["bioconda", "conda-forge", "r", "main", "free"],
-            specs_to_add=[versioned_package],
-        )
-        try:
-            transaction = solver.solve_for_transaction()
-        except Exception as e:
-            handle_exception(
-                e,
-                msg="Installing the package {}".format(versioned_package),
-                log_path=(out_dir / versioned_package).with_suffix(".error.txt"),
-                print=verbose,
-                exit=exit,
-            )
-            return
-
-        # We can't run the installs concurrently, because they used the shared conda packages cache
-        with lock:
-            transaction.download_and_extract()
-            transaction.execute()
-
-
 def exhaust(gen):
     """
     Iterates a generator until it's complete, and discards the items
@@ -192,32 +128,30 @@ def flush():
 
 
 def acclimatise_exe(
+    container: Container,
     exe: pathlib.Path,
     out_dir: pathlib.Path,
     verbose: bool = True,
-    exit_on_failure: bool = False,
-    run_kwargs: dict = {},
 ):
     """
     Given an executable path, acclimatises it, and dumps the results in out_dir
     """
+
     with log_around("Exploring {}".format(exe.name), verbose):
-        try:
-            # Briefly cd into the temp directory, so we don't fill up the cwd with junk
-            cmd = explore_command([exe.name], run_kwargs={**run_kwargs})
+        code, output = container.exec_run(
+            ["pip", "install", "acclimatise"], stderr=True
+        )
+        if code != 0:
+            logger.error(
+                "Failed to install aCLImatise for container {}.".format(exe.name)
+            )
 
-            # Dump a YAML version of the tool
-            with (out_dir / exe.name).with_suffix(".yml").open("w") as out_fp:
-                yaml.dump(cmd, out_fp)
-
-        except Exception as e:
-            if exit_on_failure:
-                raise e
-            else:
-                handle_exception(
-                    e,
-                    msg="Acclimatising the command {}".format(exe.name),
-                    log_path=(out_dir / exe.name).with_suffix(".error.txt"),
-                    print=verbose,
-                    exit=exit_on_failure,
+        code, output = container.exec_run(
+            ["acclimatise", "explore", exe.name, "--out-dir", str(out_dir)], stderr=True
+        )
+        if code != 0:
+            logger.error(
+                "Failed to aCLImatise {}. Failed with stderr: \n{}".format(
+                    exe.name, output
                 )
+            )

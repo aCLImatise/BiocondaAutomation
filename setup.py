@@ -11,6 +11,7 @@ setup(
         "packaging",
         "tqdm",
         "requests",
+        "docker",
     ],
     extras_require={"dev": ["pytest", "pre-commit"],},
     entry_points={"console_scripts": ["find_cli = bioconda_cli.main:main",],},

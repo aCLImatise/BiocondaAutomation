@@ -1,8 +1,11 @@
+import re
+from datetime import datetime
 from multiprocessing import Pool
 
-from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
-
+import docker
 import requests
+from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
+from docker.errors import NotFound
 
 from .util import *
 
@@ -49,15 +52,14 @@ def commands_from_package(
     """
     versioned_package = line.strip()
     package, version = versioned_package.split("=")
-
+    resp = requests.get(
+        f"https://api.biocontainers.pro/ga4gh/trs/v2/tools/{package}/versions/{package}-{version}"
+    ).json()
     package_images = sorted(
-        requests.get(latest_version["url"]).json()["images"],
-        key=lambda image: image["registry_host"] == "registry.hub.docker.com",
+        [img for img in resp["images"] if img["image_type"] == "Docker"],
+        key=lambda image: datetime.fromisoformat(image["updated"].rstrip("Z")),
     )
-    for image in package_images:
-        if "image_type" not in image or image["image_type"] == "Docker":
-            images.add(image["image_name"])
-            break
+    latest_image = re.sub("https?://", "", package_images[-1]["image_name"])
 
     # Each package should have its own subdirectory
     out_subdir = (out / package) / version
@@ -66,24 +68,36 @@ def commands_from_package(
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
     with log_around("Acclimatising {}".format(package), verbose=verbose):
-        with tempfile.TemporaryDirectory() as dir:
-            install_package(
-                versioned_package, dir, out_subdir, verbose, exit_on_failure
+        client = docker.from_env()
+        for image in package_images:
+            # client.login(username=None, registry=image['registry_host'])
+            formatted_image = re.sub("https?://", "", image["image_name"])
+            try:
+                # image = client.images.pull(repository=repo, tag=tag)
+                container = client.containers.run(
+                    image=latest_image,
+                    entrypoint=["sleep", "999999999"],
+                    detach=True,
+                    volumes={str(out_subdir): {"bind": "/out", "mode": "rw"}},
+                )
+                break
+            except NotFound:
+                logger.warning(
+                    "Failed to pull from {}, trying next image.".format(formatted_image)
+                )
+        else:
+            logger.error("No images could be pulled for tool {}.".format(line))
+            return
+
+        new_exes = get_package_binaries(container, package, version)
+
+        # Acclimatise each new executable
+        if len(new_exes) == 0:
+            ctx_print("Package has no executables. Skipping.", verbose)
+        for exe in new_exes:
+            acclimatise_exe(
+                container, exe, out_dir="/out", verbose=verbose,
             )
-            with activate_env(pathlib.Path(dir)):
-                new_exes = get_package_binaries(package, version)
-                # Acclimatise each new executable
-                if len(new_exes) == 0:
-                    ctx_print("Package has no executables. Skipping.", verbose)
-                for exe in new_exes:
-                    acclimatise_exe(
-                        exe,
-                        out_subdir,
-                        verbose=verbose,
-                        exit_on_failure=exit_on_failure,
-                        run_kwargs={"cwd": dir},
-                    )
-    flush()
 
 
 def generate_wrapper(
