@@ -97,6 +97,7 @@ def commands_from_package(
             acclimatise_exe(
                 container, exe, out_dir=out_subdir, verbose=verbose,
             )
+        container.kill()
 
 
 def generate_wrapper(
