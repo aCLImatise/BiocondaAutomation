@@ -62,8 +62,9 @@ def commands_from_package(
     package_images = sorted(
         [img for img in resp["images"] if img["image_type"] == "Docker"],
         key=lambda image: datetime.fromisoformat(image["updated"].rstrip("Z")),
+        reverse=True,
     )
-    latest_image = re.sub("https?://", "", package_images[-1]["image_name"])
+    # latest_image = re.sub("https?://", "", package_images[-1]["image_name"])
 
     # Each package should have its own subdirectory
     out_subdir = (out / package) / version
@@ -77,7 +78,9 @@ def commands_from_package(
             formatted_image = re.sub("https?://", "", image["image_name"])
             try:
                 container = client.containers.run(
-                    image=latest_image, entrypoint=["sleep", "999999999"], detach=True
+                    image=formatted_image,
+                    entrypoint=["sleep", "999999999"],
+                    detach=True,
                 )
                 break
             except NotFound:
