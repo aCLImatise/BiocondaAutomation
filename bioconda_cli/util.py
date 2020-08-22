@@ -71,7 +71,7 @@ def get_package_binaries(
     """
     _, root = container.exec_run("bash -l -c 'printenv CONDA_ROOT'")
     code, output = container.exec_run(
-        ["cat", "{}/conda-meta/{}*.json".format(root, package)],
+        "bash -l -c 'cat {}/conda-meta/{}*.json'".format(root, package),
         demux=True,
         stderr=True,
     )
