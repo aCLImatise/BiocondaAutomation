@@ -1,30 +1,23 @@
 """
 Utilities for executing aCLImatise over Bioconda
 """
-import argparse
 import io
 import json
 import os
 import pathlib
 import sys
-import tempfile
 import traceback
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from functools import partial
 from itertools import chain
-from logging import ERROR, getLogger
-from multiprocessing import Lock, Pool
-from typing import List, Optional, Tuple
+from logging import getLogger
+from multiprocessing import Lock
+from typing import List
 
-import click
-import docker
-from acclimatise import Command, CwlGenerator, WdlGenerator, explore_command
+from acclimatise import explore_command
+from acclimatise.execution.docker import DockerExecutor
 from acclimatise.yaml import yaml
-from docker.models.containers import Container
-from packaging.version import parse
 
-# Yes, it's a global: https://stackoverflow.com/a/28268238/2148718
-lock = Lock()
+from docker.models.containers import Container
 
 logger = getLogger(__name__)
 
@@ -132,26 +125,24 @@ def acclimatise_exe(
     exe: pathlib.Path,
     out_dir: pathlib.Path,
     verbose: bool = True,
+    exit_on_failure: bool = False,
 ):
     """
     Given an executable path, acclimatises it, and dumps the results in out_dir
     """
 
     with log_around("Exploring {}".format(exe.name), verbose):
-        code, output = container.exec_run(
-            ["pip", "install", "acclimatise"], stderr=True
-        )
-        if code != 0:
-            logger.error(
-                "Failed to install aCLImatise for container {}.".format(exe.name)
-            )
-
-        code, output = container.exec_run(
-            ["acclimatise", "explore", exe.name, "--out-dir", str(out_dir)], stderr=True
-        )
-        if code != 0:
-            logger.error(
-                "Failed to aCLImatise {}. Failed with stderr: \n{}".format(
-                    exe.name, output
-                )
+        try:
+            exec = DockerExecutor(container, timeout=10)
+            cmd = explore_command(cmd=[str(exe)], executor=exec)
+            # Dump a YAML version of the tool
+            with (out_dir / exe.name).with_suffix(".yml").open("w") as out_fp:
+                yaml.dump(cmd, out_fp)
+        except Exception as e:
+            handle_exception(
+                e,
+                msg="Acclimatising the command {}".format(exe.name),
+                log_path=(out_dir / exe.name).with_suffix(".error.txt"),
+                print=verbose,
+                exit=exit_on_failure,
             )

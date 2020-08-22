@@ -2,6 +2,11 @@
 CLI for executing aCLImatise over Bioconda
 """
 
+import argparse
+from logging import ERROR
+
+import click
+
 from bioconda_cli import *
 from bioconda_cli.util import *
 

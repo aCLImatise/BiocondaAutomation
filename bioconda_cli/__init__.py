@@ -1,10 +1,14 @@
 import re
 from datetime import datetime
+from functools import partial
 from multiprocessing import Pool
+from typing import Optional
+
+from acclimatise import WrapperGenerator
+from packaging.version import parse
 
 import docker
 import requests
-from acclimatise import CwlGenerator, WdlGenerator, WrapperGenerator, YmlGenerator
 from docker.errors import NotFound
 
 from .util import *
@@ -68,17 +72,12 @@ def commands_from_package(
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
     with log_around("Acclimatising {}".format(package), verbose=verbose):
-        client = docker.from_env()
+        client = docker.from_env(timeout=10)
         for image in package_images:
-            # client.login(username=None, registry=image['registry_host'])
             formatted_image = re.sub("https?://", "", image["image_name"])
             try:
-                # image = client.images.pull(repository=repo, tag=tag)
                 container = client.containers.run(
-                    image=latest_image,
-                    entrypoint=["sleep", "999999999"],
-                    detach=True,
-                    volumes={str(out_subdir): {"bind": "/out", "mode": "rw"}},
+                    image=latest_image, entrypoint=["sleep", "999999999"], detach=True
                 )
                 break
             except NotFound:
@@ -96,7 +95,7 @@ def commands_from_package(
             ctx_print("Package has no executables. Skipping.", verbose)
         for exe in new_exes:
             acclimatise_exe(
-                container, exe, out_dir="/out", verbose=verbose,
+                container, exe, out_dir=out_subdir, verbose=verbose,
             )
 
 
