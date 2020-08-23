@@ -56,23 +56,28 @@ def commands_from_package(
     """
     versioned_package = line.strip()
     package, version = versioned_package.split("=")
+
+    # Each package should have its own subdirectory
+    try:
+        out_subdir = (out / package) / version
+        out_subdir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        logger.warning("Directory already exists for {}={}".format(package, version))
+        return
+
     resp = requests.get(
         f"https://api.biocontainers.pro/ga4gh/trs/v2/tools/{package}/versions/{package}-{version}"
     ).json()
     package_images = sorted(
-        [img for img in resp["images"] if ('image_type' in img and img["image_type"] == "Docker")],
+        [
+            img
+            for img in resp["images"]
+            if ("image_type" in img and img["image_type"] == "Docker")
+        ],
         key=lambda image: datetime.fromisoformat(image["updated"].rstrip("Z")),
         reverse=True,
     )
-    # latest_image = re.sub("https?://", "", package_images[-1]["image_name"])
 
-    # Each package should have its own subdirectory
-    out_subdir = (out / package) / version
-    out_subdir.mkdir(parents=True, exist_ok=True)
-
-    # We have to install and uninstall each package separately because doing it all at once forces Conda to
-    # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
-    #import pdb; pdb.set_trace()
     with log_around("Acclimatising {}".format(package), verbose=verbose):
         client = docker.from_env()
         for image in package_images:

@@ -63,13 +63,10 @@ def get_conda_binaries(verbose):
     return set((pathlib.Path(conda_env) / "bin").iterdir())
 
 
-def get_package_binaries(
-    container: Container, package: str, version: str
-) -> List[pathlib.Path]:
+def get_package_binaries(container: Container, package: str, version: str) -> List[str]:
     """
     Given an already installed package, lists the binaries provided by it
     """
-    #import pdb; pdb.set_trace()
     code, output = container.exec_run(
         "bash -l -c 'cat /usr/local/conda-meta/{}*.json'".format(package),
         demux=True,
