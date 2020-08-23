@@ -100,7 +100,10 @@ def commands_from_package(
             acclimatise_exe(
                 container, exe, out_dir=out_subdir, verbose=verbose,
             )
+
+        # Clean up
         container.kill()
+        container.image.remove()
 
 
 def generate_wrapper(
