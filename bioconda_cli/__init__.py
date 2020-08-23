@@ -165,16 +165,31 @@ def wrappers(
 
 
 def install(
-    packages, out, verbose=False, processes=None, exit_on_failure=False, max_tasks=None
+    packages,
+    out,
+    verbose=False,
+    processes=None,
+    exit_on_failure=False,
+    max_tasks=None,
+    fork=True,
 ):
     # Iterate each package in the input file
     with open(packages) as fp:
-        with Pool(processes, maxtasksperchild=max_tasks) as pool:
-            lines = fp.readlines()
-            func = partial(
-                commands_from_package,
-                out=pathlib.Path(out).resolve(),
-                verbose=verbose,
-                exit_on_failure=exit_on_failure,
-            )
-            pool.map(func, lines)
+        lines = fp.readlines()
+        if fork:
+            with Pool(processes, maxtasksperchild=max_tasks) as pool:
+                func = partial(
+                    commands_from_package,
+                    out=pathlib.Path(out).resolve(),
+                    verbose=verbose,
+                    exit_on_failure=exit_on_failure,
+                )
+                pool.map(func, lines)
+        else:
+            for line in lines:
+                commands_from_package(
+                    line=line,
+                    out=pathlib.Path(out).resolve(),
+                    verbose=verbose,
+                    exit_on_failure=exit_on_failure,
+                )

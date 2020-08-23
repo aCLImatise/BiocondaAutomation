@@ -60,6 +60,12 @@ def get_parser():
         help="Use this many processes instead of all the available CPUs",
     )
     cmd_install.add_argument(
+        "--debug",
+        action="store_false",
+        test="fork",
+        help="Don't fork using multiprocessing, allowing for PDB debugging",
+    )
+    cmd_install.add_argument(
         "--max-tasks",
         "-m",
         type=int,
