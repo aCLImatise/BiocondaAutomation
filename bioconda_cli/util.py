@@ -69,9 +69,9 @@ def get_package_binaries(
     """
     Given an already installed package, lists the binaries provided by it
     """
-    _, root = container.exec_run("bash -l -c 'printenv CONDA_ROOT'")
+    #import pdb; pdb.set_trace()
     code, output = container.exec_run(
-        "bash -l -c 'cat {}/conda-meta/{}*.json'".format(root, package),
+        "bash -l -c 'cat /usr/local/conda-meta/{}*.json'".format(package),
         demux=True,
         stderr=True,
     )
@@ -80,7 +80,7 @@ def get_package_binaries(
     # The binaries in a given package are listed in the files key of the metadata file
     parsed = json.loads(stdout)
     # Only return binaries, not just any package file. Their actual location is relative to the prefix
-    return [pathlib.Path(root) / f for f in parsed["files"] if f.startswith("bin/")]
+    return [pathlib.Path(f).name for f in parsed["files"] if f.startswith("bin/")]
 
 
 def list_bin(ctx):
@@ -122,7 +122,7 @@ def flush():
 
 def acclimatise_exe(
     container: Container,
-    exe: pathlib.Path,
+    exe: str,
     out_dir: pathlib.Path,
     verbose: bool = True,
     exit_on_failure: bool = False,
@@ -131,18 +131,18 @@ def acclimatise_exe(
     Given an executable path, acclimatises it, and dumps the results in out_dir
     """
 
-    with log_around("Exploring {}".format(exe.name), verbose):
+    with log_around("Exploring {}".format(exe), verbose):
         try:
             exec = DockerExecutor(container, timeout=10)
-            cmd = explore_command(cmd=[str(exe)], executor=exec)
+            cmd = explore_command(cmd=[exe], executor=exec)
             # Dump a YAML version of the tool
-            with (out_dir / exe.name).with_suffix(".yml").open("w") as out_fp:
+            with (out_dir / exe).with_suffix(".yml").open("w") as out_fp:
                 yaml.dump(cmd, out_fp)
         except Exception as e:
             handle_exception(
                 e,
-                msg="Acclimatising the command {}".format(exe.name),
-                log_path=(out_dir / exe.name).with_suffix(".error.txt"),
+                msg="Acclimatising the command {}".format(exe),
+                log_path=(out_dir / exe).with_suffix(".error.txt"),
                 print=verbose,
                 exit=exit_on_failure,
             )

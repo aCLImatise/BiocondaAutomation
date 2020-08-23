@@ -62,7 +62,7 @@ def get_parser():
     cmd_install.add_argument(
         "--debug",
         action="store_false",
-        test="fork",
+        dest="fork",
         help="Don't fork using multiprocessing, allowing for PDB debugging",
     )
     cmd_install.add_argument(

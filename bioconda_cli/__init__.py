@@ -60,7 +60,7 @@ def commands_from_package(
         f"https://api.biocontainers.pro/ga4gh/trs/v2/tools/{package}/versions/{package}-{version}"
     ).json()
     package_images = sorted(
-        [img for img in resp["images"] if img["image_type"] == "Docker"],
+        [img for img in resp["images"] if ('image_type' in img and img["image_type"] == "Docker")],
         key=lambda image: datetime.fromisoformat(image["updated"].rstrip("Z")),
         reverse=True,
     )
@@ -72,8 +72,9 @@ def commands_from_package(
 
     # We have to install and uninstall each package separately because doing it all at once forces Conda to
     # solve an environment with thousands of packages in it, which runs forever (I tried for several days)
+    #import pdb; pdb.set_trace()
     with log_around("Acclimatising {}".format(package), verbose=verbose):
-        client = docker.from_env(timeout=10)
+        client = docker.from_env()
         for image in package_images:
             formatted_image = re.sub("https?://", "", image["image_name"])
             try:
@@ -103,7 +104,8 @@ def commands_from_package(
 
         # Clean up
         container.kill()
-        container.image.remove()
+        container.remove()
+        container.client.images.remove(container.image.id, force=True)
 
 
 def generate_wrapper(
