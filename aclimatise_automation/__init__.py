@@ -25,7 +25,7 @@ def list_images(
     :param test:
     :param last_spec:
     :param verbose:
-    :param filter_r: If true, filter out R and Bioconda packages
+    :param filter_r: If true, filter out R and bioconductor packages
     :param filter_type: A list of toolClasses strings to select, or "none" to disable filtering
     :return:
     """
