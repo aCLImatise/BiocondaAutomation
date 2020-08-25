@@ -42,6 +42,12 @@ def get_parser():
         help="Filter out R packages, which don't tend to have CLIs",
     )
     cmd_list.add_argument(
+        "--filter-type",
+        help="A toolClasses string to select, or False to disable filtering",
+        action="append",
+        choices=["CommandLineTool", "Workflow", "CommandLineMultiTool", "Service"],
+    )
+    cmd_list.add_argument(
         "--last-spec",
         type=click.Path(dir_okay=False),
         help="Path to a previous output from this command, to "

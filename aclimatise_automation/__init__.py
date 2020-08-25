@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from functools import partial
 from multiprocessing import Pool
-from typing import Optional
+from typing import Collection, Optional
 
 from acclimatise import WrapperGenerator
 from packaging.version import parse
@@ -19,14 +19,14 @@ def list_images(
     last_spec=None,
     verbose=True,
     filter_r=False,
-    filter_type: Optional[str] = "CommandLineTool",
+    filter_type: Collection[str] = {"CommandLineTool"},
 ):
     """
     :param test:
     :param last_spec:
     :param verbose:
-    :param filter_r:
-    :param filter_type: A toolClasses string to select
+    :param filter_r: If true, filter out R and Bioconda packages
+    :param filter_type: A list of toolClasses strings to select, or "none" to disable filtering
     :return:
     """
 
@@ -46,7 +46,7 @@ def list_images(
                 continue
 
             # Only consider tools of the chosen type
-            if filter_type and not package["toolclass"]["name"] == filter_type:
+            if len(filter_type) > 0 and package["toolclass"]["name"] not in filter_type:
                 continue
 
             latest_version = max(
