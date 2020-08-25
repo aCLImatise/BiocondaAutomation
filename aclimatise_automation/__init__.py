@@ -128,7 +128,7 @@ def commands_from_package(
 
         # Clean up
         container.kill()
-        container.remove()
+        container.remove(force=True)
         container.client.images.remove(container.image.id, force=True)
 
 
