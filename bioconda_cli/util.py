@@ -94,7 +94,7 @@ def get_package_binaries(package, version) -> List[pathlib.Path]:
             [
                 ".{}-pre-link.sh".format(package),
                 ".{}-post-link.sh".format(package),
-                ".{}-pre-unlink.sh".format(package)
+                ".{}-pre-unlink.sh".format(package),
             ]
         )
         # Only return binaries, not just any package file.
