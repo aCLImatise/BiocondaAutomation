@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="bioconda_find_cli",
+    name="aCLImatise-automation",
     packages=find_packages(),
     version="0.0.1",
     install_requires=[
@@ -14,5 +14,7 @@ setup(
         "docker",
     ],
     extras_require={"dev": ["pytest", "pre-commit"],},
-    entry_points={"console_scripts": ["find_cli = bioconda_cli.main:main",],},
+    entry_points={
+        "console_scripts": ["aclimatise-automation = aclimatise_automation.main:main",],
+    },
 )

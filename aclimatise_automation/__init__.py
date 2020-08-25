@@ -14,7 +14,21 @@ from docker.errors import NotFound
 from .util import *
 
 
-def list_images(test=False, last_spec=None, verbose=True, filter_r=False):
+def list_images(
+    test=False,
+    last_spec=None,
+    verbose=True,
+    filter_r=False,
+    filter_type: Optional[str] = "CommandLineTool",
+):
+    """
+    :param test:
+    :param last_spec:
+    :param verbose:
+    :param filter_r:
+    :param filter_type: A toolClasses string to select
+    :return:
+    """
 
     # The package names are keys to the output dict
     if test:
@@ -30,6 +44,11 @@ def list_images(test=False, last_spec=None, verbose=True, filter_r=False):
                 or package["name"].startswith("bioconductor-")
             ):
                 continue
+
+            # Only consider tools of the chosen type
+            if filter_type and not package["toolclass"]["name"] == filter_type:
+                continue
+
             latest_version = max(
                 package["versions"], key=lambda v: parse(v["meta_version"])
             )

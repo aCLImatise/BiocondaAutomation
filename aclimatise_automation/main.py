@@ -7,8 +7,8 @@ from logging import ERROR
 
 import click
 
-from bioconda_cli import *
-from bioconda_cli.util import *
+from aclimatise_automation import *
+from aclimatise_automation.util import *
 
 # This might make conda a bit quieter
 getLogger("conda").setLevel(ERROR)
