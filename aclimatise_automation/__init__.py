@@ -1,7 +1,8 @@
 import re
 from datetime import datetime
 from functools import partial
-from multiprocessing import Pool
+from logging.handlers import QueueHandler, QueueListener
+from multiprocessing import Pool, Queue
 from typing import Collection, Optional
 
 from acclimatise import WrapperGenerator
@@ -12,6 +13,8 @@ import requests
 from docker.errors import NotFound
 
 from .util import *
+
+logger = getLogger()
 
 
 def list_images(
@@ -68,11 +71,18 @@ def list_images(
 
 
 def commands_from_package(
-    line: str, out: pathlib.Path, verbose=True, exit_on_failure=False
+    line: str,
+    out: pathlib.Path,
+    logging_queue: Queue,
+    verbose=True,
+    exit_on_failure=False,
 ):
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
     """
+    logger = getLogger()
+    logger.addHandler(QueueHandler(logging_queue))
+
     versioned_package = line.strip()
     package, version = versioned_package.split("=")
 
@@ -97,7 +107,9 @@ def commands_from_package(
         reverse=True,
     )
 
-    with log_around("Acclimatising {}".format(package), verbose=verbose):
+    container = None
+    try:
+        logger.info("aCLImatising {}".format(line))
         client = docker.from_env()
         for image in package_images:
             formatted_image = re.sub("https?://", "", image["image_name"])
@@ -107,6 +119,7 @@ def commands_from_package(
                     entrypoint=["sleep", "999999999"],
                     detach=True,
                 )
+                logger.info("Successfully started {}".format(formatted_image))
                 break
             except NotFound:
                 logger.warning(
@@ -114,6 +127,14 @@ def commands_from_package(
                 )
         else:
             logger.error("No images could be pulled for tool {}.".format(line))
+            return
+
+        if not container.status == "running":
+            logger.error(
+                "Container is no longer running. Logs show: {}".format(
+                    container.logs(stderr=True, stdout=False)
+                )
+            )
             return
 
         new_exes = get_package_binaries(container, package, version)
@@ -126,10 +147,19 @@ def commands_from_package(
                 container, exe, out_dir=out_subdir, verbose=verbose,
             )
 
-        # Clean up
-        container.kill()
-        container.remove(force=True)
-        container.client.images.remove(container.image.id, force=True)
+    except Exception as e:
+        logger.warning(
+            "Exception {} in process currently processing {}. Cleaning up.".format(
+                e, line
+            )
+        )
+
+    finally:
+        if container is not None:
+            # Clean up
+            container.kill()
+            container.remove(force=True)
+            container.client.images.remove(container.image.id, force=True)
 
 
 def generate_wrapper(
@@ -202,6 +232,10 @@ def install(
     max_tasks=None,
     fork=True,
 ):
+    queue = Queue()
+    listener = QueueListener(queue, *logger.handlers)
+    listener.start()
+
     # Iterate each package in the input file
     with open(packages) as fp:
         lines = fp.readlines()
@@ -212,6 +246,7 @@ def install(
                     out=pathlib.Path(out).resolve(),
                     verbose=verbose,
                     exit_on_failure=exit_on_failure,
+                    logging_queue=queue,
                 )
                 pool.map(func, lines)
         else:
@@ -221,4 +256,5 @@ def install(
                     out=pathlib.Path(out).resolve(),
                     verbose=verbose,
                     exit_on_failure=exit_on_failure,
+                    logging_queue=queue,
                 )

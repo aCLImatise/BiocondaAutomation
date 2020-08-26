@@ -3,12 +3,12 @@ CLI for executing aCLImatise over Bioconda
 """
 
 import argparse
-from logging import ERROR
+from logging import ERROR, FileHandler, getLogger
+from pathlib import Path
 
 import click
 
-from aclimatise_automation import *
-from aclimatise_automation.util import *
+from aclimatise_automation import install, list_images, wrappers
 
 # This might make conda a bit quieter
 getLogger("conda").setLevel(ERROR)
@@ -17,6 +17,12 @@ getLogger("conda").setLevel(ERROR)
 def main():
     parser = get_parser()
     args = parser.parse_args()
+
+    # Write to a log file if provided
+    logger = getLogger()
+    if args.log_file:
+        logger.addHandler(FileHandler(args.log_file))
+
     kwargs = vars(args)
     func = args.func
     kwargs.pop("func")
@@ -25,7 +31,7 @@ def main():
 
 def get_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--log-file", type=Path)
     subparsers = parser.add_subparsers()
 
     cmd_list = subparsers.add_parser(
