@@ -17,13 +17,13 @@ getLogger("conda").setLevel(ERROR)
 def main():
     parser = get_parser()
     args = parser.parse_args()
+    kwargs = vars(args)
 
     # Write to a log file if provided
     logger = getLogger()
     if args.log_file:
-        logger.addHandler(FileHandler(args.log_file))
+        logger.addHandler(FileHandler(kwargs.pop("log_file")))
 
-    kwargs = vars(args)
     func = args.func
     kwargs.pop("func")
     func(**kwargs)
