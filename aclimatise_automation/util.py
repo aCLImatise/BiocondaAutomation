@@ -84,24 +84,9 @@ def list_bin(ctx):
     print("\n".join([str(x) for x in get_conda_binaries(ctx)]))
 
 
-def handle_exception(
-    exception,
-    msg,
-    log_path: pathlib.Path = None,
-    print: bool = True,
-    exit: bool = False,
-):
-    if exit:
-        raise exception
-    else:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        message = "{} failed with error {}".format(
-            msg,
-            "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
-        )
-        # Log the error to a file, and also stderr
-        log_path.write_text(message)
-        ctx_print(message, print)
+def handle_exception() -> str:
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    return "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
 
 def exhaust(gen):

@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from functools import partial
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Pool, Queue
+from multiprocessing import Pool, Queue, Manager
 from typing import Collection, Optional
 
 from acclimatise import WrapperGenerator
@@ -80,7 +80,8 @@ def commands_from_package(
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
     """
-    logger = getLogger()
+    logger = getLogger(line)
+    logger.handlers = []
     logger.addHandler(QueueHandler(logging_queue))
 
     versioned_package = line.strip()
@@ -129,10 +130,17 @@ def commands_from_package(
             logger.error("No images could be pulled for tool {}.".format(line))
             return
 
-        if not container.status == "running":
+        # Wait for container to start
+        while container.status == 'starting':
+            time.sleep(1)
+
+        # Anything other than "running" is bad
+        if not container.status != "running":
             logger.error(
-                "Container is no longer running. Logs show: {}".format(
-                    container.logs(stderr=True, stdout=False)
+                "Container {} is not running. It has status {}. Logs show: {}".format(
+                    container.id,
+                    container.status,
+                    container.logs(stderr=True, stdout=True)
                 )
             )
             return
@@ -141,7 +149,7 @@ def commands_from_package(
 
         # Acclimatise each new executable
         if len(new_exes) == 0:
-            ctx_print("Package has no executables. Skipping.", verbose)
+            logger.error("Package {} has no executables. Skipping.".format(formatted_image))
         for exe in new_exes:
             acclimatise_exe(
                 container, exe, out_dir=out_subdir, verbose=verbose,
@@ -149,8 +157,8 @@ def commands_from_package(
 
     except Exception as e:
         logger.warning(
-            "Exception {} in process currently processing {}. Cleaning up.".format(
-                e, line
+            "Exception in process currently processing {}: {}. Cleaning up.".format(
+                line, handle_exception()
             )
         )
 
@@ -194,12 +202,7 @@ def generate_wrapper(
                 gen = subclass()
                 exhaust(gen.generate_tree(cmd, output_path))
         except Exception as e:
-            handle_exception(
-                e,
-                msg="Converting the command {}".format(command),
-                log_path=command.with_suffix(".error"),
-                print=verbose,
-            )
+            logger.error(handle_exception())
 
 
 def wrappers(
@@ -232,7 +235,8 @@ def install(
     max_tasks=None,
     fork=True,
 ):
-    queue = Queue()
+    manager = Manager()
+    queue = manager.Queue()
     listener = QueueListener(queue, *logger.handlers)
     listener.start()
 
