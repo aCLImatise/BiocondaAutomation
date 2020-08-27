@@ -1,8 +1,9 @@
 import re
+import time
 from datetime import datetime
 from functools import partial
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Pool, Queue, Manager
+from multiprocessing import Manager, Pool, Queue
 from typing import Collection, Optional
 
 from acclimatise import WrapperGenerator
@@ -80,11 +81,11 @@ def commands_from_package(
     """
     Given a package name, install it in an isolated environment, and acclimatise all package binaries
     """
-    logger = getLogger(line)
+    versioned_package = line.strip()
+    logger = getLogger(versioned_package)
     logger.handlers = []
     logger.addHandler(QueueHandler(logging_queue))
 
-    versioned_package = line.strip()
     package, version = versioned_package.split("=")
 
     # Each package should have its own subdirectory
@@ -120,19 +121,24 @@ def commands_from_package(
                     entrypoint=["sleep", "999999999"],
                     detach=True,
                 )
-                logger.info("Successfully started {}".format(formatted_image))
+                logger.info("Successfully started")
                 break
             except NotFound:
                 logger.warning(
                     "Failed to pull from {}, trying next image.".format(formatted_image)
                 )
         else:
-            logger.error("No images could be pulled for tool {}.".format(line))
+            logger.error("No images could be pulled")
             return
 
         # Wait for container to start
-        while container.status == 'starting':
+        start = time.time()
+        while container.status == "starting":
             time.sleep(1)
+
+            if time.time() >= start + 60:
+                logger.error("Stopped waiting for container to start after 60 seconds")
+                return
 
         # Anything other than "running" is bad
         if not container.status != "running":
@@ -140,16 +146,20 @@ def commands_from_package(
                 "Container {} is not running. It has status {}. Logs show: {}".format(
                     container.id,
                     container.status,
-                    container.logs(stderr=True, stdout=True)
+                    container.logs(stderr=True, stdout=True),
                 )
             )
             return
 
+        logger.info("Finding binaries")
         new_exes = get_package_binaries(container, package, version)
+        logger.info("{} binaries found".format(len(new_exes)))
 
         # Acclimatise each new executable
         if len(new_exes) == 0:
-            logger.error("Package {} has no executables. Skipping.".format(formatted_image))
+            logger.error(
+                "Package {} has no executables. Skipping.".format(formatted_image)
+            )
         for exe in new_exes:
             acclimatise_exe(
                 container, exe, out_dir=out_subdir, verbose=verbose,

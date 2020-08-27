@@ -21,7 +21,7 @@ def main():
 
     # Write to a log file if provided
     logger = getLogger()
-    log_file = kwargs.pop('log_file', None)
+    log_file = kwargs.pop("log_file", None)
     if log_file is not None:
         logger.addHandler(FileHandler(log_file))
 
