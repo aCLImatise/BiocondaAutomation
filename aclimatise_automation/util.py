@@ -14,6 +14,7 @@ from multiprocessing import Lock
 from typing import List
 
 from acclimatise import explore_command
+from acclimatise.converter.yml import YmlGenerator
 from acclimatise.execution.docker import DockerExecutor
 from acclimatise.yaml import yaml
 
@@ -103,28 +104,18 @@ def flush():
 
 
 def acclimatise_exe(
-    container: Container,
-    exe: str,
-    out_dir: pathlib.Path,
-    verbose: bool = True,
-    exit_on_failure: bool = False,
+    container: Container, exe: str, out_dir: pathlib.Path,
 ):
     """
     Given an executable path, acclimatises it, and dumps the results in out_dir
     """
+    gen = YmlGenerator()
+    logger.info("Exploring {}".format(exe))
 
-    with log_around("Exploring {}".format(exe), verbose):
-        try:
-            exec = DockerExecutor(container, timeout=10)
-            cmd = explore_command(cmd=[exe], executor=exec)
-            # Dump a YAML version of the tool
-            with (out_dir / exe).with_suffix(".yml").open("w") as out_fp:
-                yaml.dump(cmd, out_fp)
-        except Exception as e:
-            handle_exception(
-                e,
-                msg="Acclimatising the command {}".format(exe),
-                log_path=(out_dir / exe).with_suffix(".error.txt"),
-                print=verbose,
-                exit=exit_on_failure,
-            )
+    try:
+        exec = DockerExecutor(container, timeout=10)
+        cmd = explore_command(cmd=[exe], executor=exec)
+        # Dump a YAML version of the tool
+        exhaust(gen.generate_tree(cmd, out_dir))
+    except Exception as e:
+        handle_exception()
