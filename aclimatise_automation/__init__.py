@@ -111,7 +111,7 @@ def commands_from_package(
 
     container = None
     try:
-        logger.info("aCLImatising {}".format(line))
+        logger.info("aCLImatising {}".format(versioned_package))
         client = docker.from_env()
         for image in package_images:
             formatted_image = re.sub("https?://", "", image["image_name"])
@@ -168,7 +168,7 @@ def commands_from_package(
     except Exception as e:
         logger.warning(
             "Exception in process currently processing {}: {}. Cleaning up.".format(
-                line, handle_exception()
+                versioned_package, handle_exception()
             )
         )
 
