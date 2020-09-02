@@ -77,8 +77,15 @@ def get_package_binaries(container: Container, package: str, version: str) -> Li
 
     # The binaries in a given package are listed in the files key of the metadata file
     parsed = json.loads(stdout)
+    paths = [pathlib.Path(f) for f in parsed["files"]]
+
     # Only return binaries, not just any package file. Their actual location is relative to the prefix
-    return [pathlib.Path(f).name for f in parsed["files"] if f.startswith("bin/")]
+    # Filter out files that are within subdirectories inside /bin
+    return [
+        pathlib.Path(f).name
+        for f in paths
+        if f.parent.name == "bin" and len(f.parts) == 2
+    ]
 
 
 def list_bin(ctx):
