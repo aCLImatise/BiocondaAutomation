@@ -97,12 +97,6 @@ def get_parser():
         help="The number of packages each process will analyse before it is replaced with a fresh worker process",
     )
     cmd_install.add_argument(
-        "--exit-on-failure",
-        "-x",
-        action="store_true",
-        help="Exit the entire process if any package fails",
-    )
-    cmd_install.add_argument(
         "packages",
         type=click.Path(dir_okay=False),
         help="A file that has one package with "
