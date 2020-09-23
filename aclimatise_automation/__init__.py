@@ -6,11 +6,11 @@ from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Manager, Pool, Queue
 from typing import Collection, Optional
 
-from acclimatise import WrapperGenerator
 from packaging.version import parse
 
 import docker
 import requests
+from aclimatise import WrapperGenerator
 from docker.errors import NotFound
 
 from .util import *
@@ -75,7 +75,7 @@ def commands_from_package(
     line: str, out: pathlib.Path, logging_queue: Queue,
 ):
     """
-    Given a package name, install it in an isolated environment, and acclimatise all package binaries
+    Given a package name, install it in an isolated environment, and aclimatise all package binaries
     """
     versioned_package = line.strip()
     logger = getLogger(versioned_package)
@@ -151,13 +151,13 @@ def commands_from_package(
         new_exes = get_package_binaries(container, package, version)
         logger.info("{} binaries found".format(len(new_exes)))
 
-        # Acclimatise each new executable
+        # Aclimatise each new executable
         if len(new_exes) == 0:
             logger.error(
                 "Package {} has no executables. Skipping.".format(formatted_image)
             )
         for exe in new_exes:
-            acclimatise_exe(
+            aclimatise_exe(
                 container, exe, out_dir=out_subdir,
             )
 

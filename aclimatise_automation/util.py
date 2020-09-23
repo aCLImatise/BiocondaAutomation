@@ -13,11 +13,10 @@ from logging import getLogger
 from multiprocessing import Lock
 from typing import List
 
-from acclimatise import explore_command
-from acclimatise.converter.yml import YmlGenerator
-from acclimatise.execution.docker import DockerExecutor
-from acclimatise.yaml import yaml
-
+from aclimatise import explore_command
+from aclimatise.converter.yml import YmlGenerator
+from aclimatise.execution.docker import DockerExecutor
+from aclimatise.yaml import yaml
 from docker.models.containers import Container
 
 logger = getLogger(__name__)
@@ -110,11 +109,11 @@ def flush():
     sys.stderr.flush()
 
 
-def acclimatise_exe(
+def aclimatise_exe(
     container: Container, exe: str, out_dir: pathlib.Path,
 ):
     """
-    Given an executable path, acclimatises it, and dumps the results in out_dir
+    Given an executable path, aclimatises it, and dumps the results in out_dir
     """
     gen = YmlGenerator()
     logger.info("Exploring {}".format(exe))

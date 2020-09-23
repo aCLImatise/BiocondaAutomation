@@ -58,7 +58,7 @@ def get_parser():
         "--last-spec",
         type=click.Path(dir_okay=False),
         help="Path to a previous output from this command, to "
-        "ensure we only acclimatise new tool versions",
+        "ensure we only aclimatise new tool versions",
     )
     cmd_list.set_defaults(func=list_images)
 
