@@ -21,6 +21,13 @@ from aclimatise_automation.yml import yaml
 getLogger("conda").setLevel(ERROR)
 
 
+class PathPath(PathPath):
+    """A Click path argument that returns a pathlib Path, not a string"""
+
+    def convert(self, value, param, ctx):
+        return Path(super().convert(value, param, ctx))
+
+
 def main():
     parser = get_parser()
     args = parser.parse_args()
@@ -73,7 +80,7 @@ def get_parser():
     )
     cmd_install.add_argument(
         "--last-meta",
-        type=click.Path(dir_okay=False),
+        type=PathPath(dir_okay=False),
         help="Path to a previous output from the meta command, to ensure we only aclimatise new tool versions",
     )
     cmd_install.add_argument(
@@ -98,13 +105,13 @@ def get_parser():
     )
     cmd_install.add_argument(
         "metadata",
-        type=click.Path(dir_okay=False),
+        type=PathPath(dir_okay=False),
         help="A file that has one package with "
         "associated version number, one per line",
     )
     cmd_install.add_argument(
         "out",
-        type=click.Path(file_okay=False, dir_okay=True, exists=True),
+        type=PathPath(file_okay=False, dir_okay=True, exists=True),
         help="A directory into which to produce output files",
     )
     cmd_install.set_defaults(func=new_definitions)
@@ -115,17 +122,17 @@ def get_parser():
     )
     cmd_reanalyse.add_argument(
         "dir",
-        type=click.Path(file_okay=False, dir_okay=True, exists=True),
+        type=PathPath(file_okay=False, dir_okay=True, exists=True),
         help="The directory to re-analyse",
     )
     cmd_reanalyse.add_argument(
         "--old-meta",
-        type=click.Path(file_okay=True, dir_okay=False, exists=True),
+        type=PathPath(file_okay=True, dir_okay=False, exists=True),
         help="The metadata file used in the last analysis",
     )
     cmd_reanalyse.add_argument(
         "--new-meta",
-        type=click.Path(file_okay=True, dir_okay=False, exists=True),
+        type=PathPath(file_okay=True, dir_okay=False, exists=True),
         help="An up-to-date metadata file",
     )
     cmd_reanalyse.add_argument(
@@ -155,12 +162,12 @@ def get_parser():
         help="Recursively convert all .yml dumped Commands into tool wrappers",
     )
     cmd_wrappers.add_argument(
-        "command_dir", type=click.Path(dir_okay=True, file_okay=False, exists=True)
+        "command_dir", type=PathPath(dir_okay=True, file_okay=False, exists=True)
     )
     cmd_wrappers.add_argument(
         "--output-dir",
         "-o",
-        type=click.Path(dir_okay=True, file_okay=False, exists=True),
+        type=PathPath(dir_okay=True, file_okay=False, exists=True),
     )
     cmd_wrappers.set_defaults(func=wrappers)
 
