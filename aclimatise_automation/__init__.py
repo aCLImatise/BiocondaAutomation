@@ -4,31 +4,27 @@ from datetime import datetime
 from functools import partial
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Manager, Pool, Queue
+from pathlib import Path
 from typing import Collection, Optional
 
-from packaging.version import parse
-
 import docker
-import requests
-from aclimatise import WrapperGenerator
+from aclimatise import Command, WrapperGenerator, parse_help
 from docker.errors import NotFound
 
+from .metadata import BaseCampMeta
 from .util import *
 
 logger = getLogger()
 
 
-def list_images(
+def calculate_metadata(
     test=False,
-    last_spec=None,
-    verbose=True,
     filter_r=False,
     filter_type: Collection[str] = {"CommandLineTool"},
-):
+) -> BaseCampMeta:
     """
-    :param test:
-    :param last_spec:
-    :param verbose:
+    Generates a new metadata file, which is basically a specification for an automation run
+    :param test: If we're in test mode
     :param filter_r: If true, filter out R and bioconductor packages
     :param filter_type: A list of toolClasses strings to select, or "none" to disable filtering
     :return:
@@ -36,38 +32,12 @@ def list_images(
 
     # The package names are keys to the output dict
     if test:
-        images = {"bwa=0.7.17"}
+        images = ["bwa=0.7.17"]
     else:
-        images = set()
-        for package in requests.get(
-            "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
-            params=dict(toolClass="Docker", limit=10000),
-        ).json():
-            if filter_r and (
-                package["name"].startswith("r-")
-                or package["name"].startswith("bioconductor-")
-            ):
-                continue
+        images = latest_biocontainers(filter_r=filter_r, filter_type=filter_type)
 
-            # Only consider tools of the chosen type
-            if len(filter_type) > 0 and package["toolclass"]["name"] not in filter_type:
-                continue
-
-            latest_version = max(
-                package["versions"], key=lambda v: parse(v["meta_version"])
-            )
-            images.add("{}={}".format(package["name"], latest_version["meta_version"]))
-
-    # The previous spec file basically defines a set of versions *not* to use
-    if last_spec is not None:
-        with open(last_spec) as fp:
-            last_spec_versions = set((line.strip() for line in fp.readlines()))
-    else:
-        last_spec_versions = set()
-
-    # Subtract the two sets to produce the final result
-    sys.stdout.writelines(
-        [package + "\n" for package in sorted(list(images - last_spec_versions))]
+    return BaseCampMeta(
+        packages=images, aclimatise_version=latest_package_version("aclimatise")
     )
 
 
@@ -183,8 +153,8 @@ def commands_from_package(
 def generate_wrapper(
     command: pathlib.Path,
     command_dir: pathlib.Path,
+    logging_queue: Queue,
     output_dir: Optional[os.PathLike] = None,
-    verbose: bool = True,
 ):
     """
     Recursively convert all .yml dumped Commands into tool wrappers
@@ -192,78 +162,188 @@ def generate_wrapper(
     :param command: Path to a YAML file to convert
     :param output_dir: If provided, output files in the same directory structure, but in this directory
     """
+    logger = getLogger(str(command))
+    logger.handlers = []
+    logger.addHandler(QueueHandler(logging_queue))
+
     command = command.resolve()
 
-    with log_around("Converting {}".format(command), verbose):
-        with command.open() as fp:
-            cmd = yaml.load(fp)
+    logger.info("Converting...")
+    with command.open() as fp:
+        cmd = yaml.load(fp)
 
-        if output_dir:
-            output_path = pathlib.Path(output_dir) / command.parent.relative_to(
-                command_dir
-            )
-        else:
-            output_path = command.parent
+    if output_dir:
+        output_path = pathlib.Path(output_dir) / command.parent.relative_to(command_dir)
+    else:
+        output_path = command.parent
 
-        output_path.mkdir(parents=True, exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
 
-        try:
-            for subclass in WrapperGenerator.__subclasses__():
-                gen = subclass()
-                exhaust(gen.generate_tree(cmd, output_path))
-        except Exception as e:
-            logger.error(handle_exception())
+    try:
+        for subclass in WrapperGenerator.__subclasses__():
+            gen = subclass()
+            exhaust(gen.generate_tree(cmd, output_path))
+    except Exception as e:
+        logger.error(handle_exception())
 
 
 def wrappers(
     command_dir: os.PathLike,
     output_dir: Optional[os.PathLike] = None,
-    verbose: bool = True,
 ):
     """
     Recursively convert all .yml dumped Commands into tool wrappers
     :param command_dir: Directory to convert from
     :param output_dir: If provided, output files in the same directory structure, but in this directory
     """
-    with Pool() as pool:
-        packages = pathlib.Path(command_dir).rglob("*.yml")
-        func = partial(
-            generate_wrapper,
-            output_dir=pathlib.Path(output_dir).resolve() if output_dir else None,
-            verbose=verbose,
-            command_dir=pathlib.Path(command_dir).resolve(),
-        )
-        pool.map(func, packages)
-
-
-def install(
-    packages,
-    out,
-    processes=None,
-    exit_on_failure=False,
-    max_tasks=None,
-    fork=True,
-):
     manager = Manager()
     queue = manager.Queue()
     listener = QueueListener(queue, *logger.handlers)
     listener.start()
 
+    with Pool() as pool:
+        packages = pathlib.Path(command_dir).rglob("*.yml")
+        func = partial(
+            generate_wrapper,
+            output_dir=pathlib.Path(output_dir).resolve() if output_dir else None,
+            command_dir=pathlib.Path(command_dir).resolve(),
+            logging_queue=queue,
+        )
+        pool.map(func, packages)
+
+
+def reanalyse_tool(tool: Path, logging_queue: Queue):
+    """
+    Reanalyses a file, replacing its contents with a new parse
+    :param tool: Path to the file to reanalyse
+    """
+    # Setup a logger for this task
+    logger = getLogger(str(tool))
+    logger.handlers = []
+    logger.addHandler(QueueHandler(logging_queue))
+
+    logger.info("Reanalysing...".format(tool))
+    with tool.open() as fp:
+        old_cmd: Command = yaml.load(fp)
+
+    if old_cmd.help_text is None or len(old_cmd.help_text) == 0:
+        logger.warning("Has no help text to re-analyse")
+        return
+
+    if len(old_cmd.subcommands) > 0:
+        logger.warning(
+            "This tool has subcommands. We can't reanalyse this without re-running it."
+        )
+        return
+
+    gen = YmlGenerator()
+    new_cmd = parse_help(cmd=old_cmd.command, text=old_cmd.help_text)
+    gen.save_to_file(new_cmd, tool)
+
+
+def new_definitions(
+    metadata: Path,
+    out: Path,
+    processes: int = None,
+    last_meta: Path = None,
+    max_tasks: int = None,
+    fork: bool = True,
+):
+    """
+    Generates missing tool definitions, using the given metadata
+    :param metadata: The state to upgrade the database to
+    :param out: The output directory
+    :param processes: Maximum number of threads to use
+    :param last_meta: The previous tool database state
+    :param max_tasks: Number of tasks before each process is regenerated
+    :param fork: If False, don't run in parallel (for debugging)
+    """
+    manager = Manager()
+    queue = manager.Queue()
+    listener = QueueListener(queue, *logger.handlers)
+    listener.start()
+
+    # Get the latest list of packages
+    with metadata.open() as fp:
+        new_meta = yaml.load(fp)
+    to_aclimatise = set(new_meta.packages)
+
+    if last_meta:
+        with last_meta.open() as fp:
+            old_meta = yaml.load(fp)
+            # We don't have to aclimatise packages we've already done
+            to_aclimatise -= set(old_meta.packages)
+
     # Iterate each package in the input file
-    with open(packages) as fp:
-        lines = fp.readlines()
-        if fork:
-            with Pool(processes, maxtasksperchild=max_tasks) as pool:
-                func = partial(
-                    commands_from_package,
-                    out=pathlib.Path(out).resolve(),
-                    logging_queue=queue,
+    if fork:
+        with Pool(processes, maxtasksperchild=max_tasks) as pool:
+            func = partial(
+                commands_from_package,
+                out=pathlib.Path(out).resolve(),
+                logging_queue=queue,
+            )
+            pool.map(func, to_aclimatise)
+    else:
+        for line in to_aclimatise:
+            commands_from_package(
+                line=line,
+                out=pathlib.Path(out).resolve(),
+                logging_queue=queue,
+            )
+
+
+def reanalyse(
+    dir: Path,
+    new_meta: Path = None,
+    old_meta: Path = None,
+    processes: int = None,
+    max_tasks: int = None,
+    fork: bool = True,
+):
+    """
+    Reanalyses old tool definitions using the latest parser. This requires pre-existing ToolDefinition YAML files
+    :param new_meta: The state to upgrade the database to
+    :param definition_dir: The directory containing existing tool definitions
+    :param processes: Maximum number of threads to use
+    :param last_meta: The previous tool database state
+    :param max_tasks: Number of tasks before each process is regenerated
+    :param fork: If False, don't run in parallel (for debugging)
+    """
+    manager = Manager()
+    queue = manager.Queue()
+    listener = QueueListener(queue, *logger.handlers)
+    listener.start()
+
+    # Get the latest list of packages
+    if new_meta is not None and old_meta is not None:
+        with new_meta.open() as fp:
+            new_meta = yaml.load(fp)
+
+        with old_meta.open() as fp:
+            old_meta = yaml.load(fp)
+
+        if not parse(new_meta.aclimatise_version) > parse(old_meta.aclimatise_version):
+            # If there hasn't been a new version of the parser, there's no reason to reanalyse
+            logger.warning(
+                "The previous analysis was done using aclimatise=={}, while the new metadata is for an older or equal version: {}. Skipping.".format(
+                    old_meta.aclimatise_version, new_meta.aclimatise_version
                 )
-                pool.map(func, lines)
-        else:
-            for line in lines:
-                commands_from_package(
-                    line=line,
-                    out=pathlib.Path(out).resolve(),
-                    logging_queue=queue,
-                )
+            )
+            return
+
+    to_reanalyse = dir.rglob("*.yml")
+
+    # Iterate each package in the input file
+    if fork:
+        with Pool(processes, maxtasksperchild=max_tasks) as pool:
+            func = partial(
+                reanalyse_tool,
+                logging_queue=queue,
+            )
+            pool.map(func, to_reanalyse)
+    else:
+        for file in to_reanalyse:
+            reanalyse_tool(
+                file,
+                logging_queue=queue,
+            )
