@@ -97,7 +97,7 @@ def get_parser():
         help="The number of packages each process will analyse before it is replaced with a fresh worker process",
     )
     cmd_install.add_argument(
-        "packages",
+        "metadata",
         type=click.Path(dir_okay=False),
         help="A file that has one package with "
         "associated version number, one per line",
