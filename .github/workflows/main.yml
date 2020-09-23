@@ -25,8 +25,9 @@ jobs:
       - name: Test CLI
         run: |
           source /root/.bashrc
-          aclimatise-automation list-packages --test > packages.txt
+          aclimatise-automation metadata --test > packages.yml
           mkdir out/
-          aclimatise-automation install packages.txt out/
+          aclimatise-automation install packages.yml out/
           aclimatise-automation wrappers out/
+          aclimatise-automation reanalyse out/
         shell: bash
