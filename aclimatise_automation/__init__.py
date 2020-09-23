@@ -196,12 +196,18 @@ def wrappers(
     :param command_dir: Directory to convert from
     :param output_dir: If provided, output files in the same directory structure, but in this directory
     """
+    manager = Manager()
+    queue = manager.Queue()
+    listener = QueueListener(queue, *logger.handlers)
+    listener.start()
+
     with Pool() as pool:
         packages = pathlib.Path(command_dir).rglob("*.yml")
         func = partial(
             generate_wrapper,
             output_dir=pathlib.Path(output_dir).resolve() if output_dir else None,
             command_dir=pathlib.Path(command_dir).resolve(),
+            logging_queue=queue,
         )
         pool.map(func, packages)
 
