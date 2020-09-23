@@ -293,7 +293,7 @@ def new_definitions(
 
 
 def reanalyse(
-    definition_dir: Path,
+    dir: Path,
     new_meta: Path = None,
     old_meta: Path = None,
     processes: int = None,
@@ -331,7 +331,7 @@ def reanalyse(
             )
             return
 
-    to_reanalyse = definition_dir.rglob("*.yml")
+    to_reanalyse = dir.rglob("*.yml")
 
     # Iterate each package in the input file
     if fork:
