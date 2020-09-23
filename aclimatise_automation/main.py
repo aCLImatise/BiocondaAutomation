@@ -21,7 +21,7 @@ from aclimatise_automation.yml import yaml
 getLogger("conda").setLevel(ERROR)
 
 
-class PathPath(PathPath):
+class PathPath(click.Path):
     """A Click path argument that returns a pathlib Path, not a string"""
 
     def convert(self, value, param, ctx):
