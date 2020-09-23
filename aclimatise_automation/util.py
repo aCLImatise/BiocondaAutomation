@@ -110,7 +110,9 @@ def flush():
 
 
 def aclimatise_exe(
-    container: Container, exe: str, out_dir: pathlib.Path,
+    container: Container,
+    exe: str,
+    out_dir: pathlib.Path,
 ):
     """
     Given an executable path, aclimatises it, and dumps the results in out_dir

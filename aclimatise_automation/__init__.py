@@ -72,7 +72,9 @@ def list_images(
 
 
 def commands_from_package(
-    line: str, out: pathlib.Path, logging_queue: Queue,
+    line: str,
+    out: pathlib.Path,
+    logging_queue: Queue,
 ):
     """
     Given a package name, install it in an isolated environment, and aclimatise all package binaries
@@ -158,7 +160,9 @@ def commands_from_package(
             )
         for exe in new_exes:
             aclimatise_exe(
-                container, exe, out_dir=out_subdir,
+                container,
+                exe,
+                out_dir=out_subdir,
             )
 
     except Exception as e:
@@ -233,7 +237,12 @@ def wrappers(
 
 
 def install(
-    packages, out, processes=None, exit_on_failure=False, max_tasks=None, fork=True,
+    packages,
+    out,
+    processes=None,
+    exit_on_failure=False,
+    max_tasks=None,
+    fork=True,
 ):
     manager = Manager()
     queue = manager.Queue()
@@ -254,5 +263,7 @@ def install(
         else:
             for line in lines:
                 commands_from_package(
-                    line=line, out=pathlib.Path(out).resolve(), logging_queue=queue,
+                    line=line,
+                    out=pathlib.Path(out).resolve(),
+                    logging_queue=queue,
                 )

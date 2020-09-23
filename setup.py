@@ -13,8 +13,12 @@ setup(
         "requests",
         "docker",
     ],
-    extras_require={"dev": ["pytest", "pre-commit"],},
+    extras_require={
+        "dev": ["pytest", "pre-commit"],
+    },
     entry_points={
-        "console_scripts": ["aclimatise-automation = aclimatise_automation.main:main",],
+        "console_scripts": [
+            "aclimatise-automation = aclimatise_automation.main:main",
+        ],
     },
 )
