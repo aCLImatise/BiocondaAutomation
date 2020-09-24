@@ -46,6 +46,8 @@ jobs:
           aclimatise-automation install BaseCamp/new_packages.yml out/ --last-meta BaseCamp/packages.yml
           # Regenerate all wrappers
           aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
+          # The new metadata is now the current metadata
+          mv BaseCamp/new_packages.yml BaseCamp/packages.yml
         shell: bash
 
       - name: Commit files
