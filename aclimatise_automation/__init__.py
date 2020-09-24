@@ -180,9 +180,21 @@ def generate_wrapper(
     output_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        for subclass in WrapperGenerator.__subclasses__():
-            gen = subclass()
-            exhaust(gen.generate_tree(cmd, output_path))
+        generators = [Gen() for Gen in WrapperGenerator.__subclasses__()]
+        for cmd in cmd.command_tree():
+            if len(cmd.subcommands) > 0:
+                # Since we're dumping directly usable tool definitions, it doesn't make sense to dump the parent
+                # commands like "samtools" rather than "samtools index", so skip them
+                continue
+
+            # Also, if we are dumping, we disconnect each Command from the command tree to simplify the output
+            cmd.parent = None
+            cmd.subcommands = []
+
+            for gen in generators:
+                path = output_path / (cmd.as_filename + gen.suffix)
+                gen.save_to_file(cmd, path)
+                logger.info("Converted to {}".format(gen.suffix))
     except Exception as e:
         logger.error(handle_exception())
 

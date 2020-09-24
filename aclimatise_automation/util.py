@@ -130,7 +130,11 @@ def aclimatise_exe(
     try:
         exec = DockerExecutor(container, timeout=10)
         cmd = explore_command(cmd=[exe], executor=exec)
-        # Dump a YAML version of the tool
-        exhaust(gen.generate_tree(cmd, out_dir))
+        path = out_dir / (cmd.as_filename + ".yml")
+        # Rather than writing out the whole tree, which has redundant information, we instead take the top level command
+        # which contains the entire tree, and serialize that
+        gen.save_to_file(cmd, path)
     except Exception as e:
         handle_exception()
+
+    logger.info("Successfully written to YAML".format(exe))
