@@ -13,45 +13,52 @@ from logging import getLogger
 from multiprocessing import Lock
 from typing import List
 
+from packaging.version import parse
+
+import requests
 from aclimatise import explore_command
 from aclimatise.converter.yml import YmlGenerator
 from aclimatise.execution.docker import DockerExecutor
-from aclimatise.yaml import yaml
+from aclimatise_automation.yml import yaml
 from docker.models.containers import Container
 
 logger = getLogger(__name__)
 
 
+def latest_package_version(package: str) -> str:
+    """
+    Gets the latest version number of a PyPI package
+    """
+    req = requests.get("https://pypi.python.org/pypi/{}/json".format(package))
+    return req.json()["info"]["version"]
+
+
+def latest_biocontainers(filter_r: bool, filter_type: List[str]) -> List[str]:
+    images = set()
+    for package in requests.get(
+        "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
+        params=dict(toolClass="Docker", limit=10000),
+    ).json():
+        if filter_r and (
+            package["name"].startswith("r-")
+            or package["name"].startswith("bioconductor-")
+        ):
+            continue
+
+        # Only consider tools of the chosen type
+        if len(filter_type) > 0 and package["toolclass"]["name"] not in filter_type:
+            continue
+
+        latest_version = max(
+            package["versions"], key=lambda v: parse(v["meta_version"])
+        )
+        images.add("{}={}".format(package["name"], latest_version["meta_version"]))
+    return list(images)
+
+
 def ctx_print(msg, verbose=True):
     if verbose:
         print(msg, file=sys.stderr)
-
-
-@contextmanager
-def log_around(msg: str, verbose=True, capture=True):
-    """
-    Wraps a long function invocation with a message like:
-    "Running long process... done"
-    """
-    # Skip this unless we're in verbose mode
-    if not verbose:
-        yield
-        return
-
-    # Store the stdout and stderr to avoid clogging up the logs
-    err = io.StringIO()
-    out = io.StringIO()
-    print(msg + "...", end="", file=sys.stderr)
-    with redirect_stderr(err), redirect_stdout(out):
-        yield
-    print("Done.", file=sys.stderr)
-
-    # Indent the stdout/stderr
-    if capture:
-        err.seek(0)
-        out.seek(0)
-        for line in chain(out.readlines(), err.readlines()):
-            print("\t" + line, file=sys.stderr, end="")
 
 
 def get_conda_binaries(verbose):
@@ -123,7 +130,11 @@ def aclimatise_exe(
     try:
         exec = DockerExecutor(container, timeout=10)
         cmd = explore_command(cmd=[exe], executor=exec)
-        # Dump a YAML version of the tool
-        exhaust(gen.generate_tree(cmd, out_dir))
+        path = out_dir / (cmd.as_filename + ".yml")
+        # Rather than writing out the whole tree, which has redundant information, we instead take the top level command
+        # which contains the entire tree, and serialize that
+        gen.save_to_file(cmd, path)
     except Exception as e:
         handle_exception()
+
+    logger.info("Successfully written to YAML".format(exe))

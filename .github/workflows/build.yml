@@ -1,3 +1,4 @@
+# This is the regular build workflow that runs tests and ensures PRs are not breaking things
 name: CI
 
 on:
@@ -17,7 +18,7 @@ jobs:
       - name: Install python code
         run: |
           pip install -U pip setuptools wheel
-          pip install -U .[dev] --ignore-installed
+          pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
           python -m spacy download en
 
       - uses: pre-commit/action@v1.0.1
@@ -25,8 +26,9 @@ jobs:
       - name: Test CLI
         run: |
           source /root/.bashrc
-          aclimatise-automation list-packages --test > packages.txt
+          aclimatise-automation metadata --test > packages.yml
           mkdir out/
-          aclimatise-automation install packages.txt out/
+          aclimatise-automation install packages.yml out/
           aclimatise-automation wrappers out/
+          aclimatise-automation reanalyse out/
         shell: bash

@@ -3,15 +3,29 @@ CLI for executing aCLImatise over Bioconda
 """
 
 import argparse
+import sys
 from logging import ERROR, FileHandler, getLogger
 from pathlib import Path
 
 import click
 
-from aclimatise_automation import install, list_images, wrappers
+from aclimatise_automation import (
+    calculate_metadata,
+    new_definitions,
+    reanalyse,
+    wrappers,
+)
+from aclimatise_automation.yml import yaml
 
 # This might make conda a bit quieter
 getLogger("conda").setLevel(ERROR)
+
+
+class PathPath(click.Path):
+    """A Click path argument that returns a pathlib Path, not a string"""
+
+    def convert(self, value, param, ctx):
+        return Path(super().convert(value, param, ctx))
 
 
 def main():
@@ -36,7 +50,7 @@ def get_parser():
     subparsers = parser.add_subparsers()
 
     cmd_list = subparsers.add_parser(
-        "list-packages", help="Lists all the packages in bioconda, one per line"
+        "metadata", help="Lists all the packages in bioconda, one per line"
     )
     cmd_list.add_argument(
         "--test",
@@ -52,18 +66,22 @@ def get_parser():
         "--filter-type",
         help="A toolClasses string to select, or False to disable filtering",
         action="append",
+        default=["CommandLineTool"],
         choices=["CommandLineTool", "Workflow", "CommandLineMultiTool", "Service"],
     )
-    cmd_list.add_argument(
-        "--last-spec",
-        type=click.Path(dir_okay=False),
-        help="Path to a previous output from this command, to "
-        "ensure we only aclimatise new tool versions",
+    cmd_list.set_defaults(
+        func=lambda *args, **kwargs: yaml.dump(
+            calculate_metadata(*args, **kwargs), stream=sys.stdout
+        )
     )
-    cmd_list.set_defaults(func=list_images)
 
     cmd_install = subparsers.add_parser(
         "install", help="Install a list of packages and list the new binaries"
+    )
+    cmd_install.add_argument(
+        "--last-meta",
+        type=PathPath(dir_okay=False),
+        help="Path to a previous output from the meta command, to ensure we only aclimatise new tool versions",
     )
     cmd_install.add_argument(
         "--processes",
@@ -86,35 +104,70 @@ def get_parser():
         help="The number of packages each process will analyse before it is replaced with a fresh worker process",
     )
     cmd_install.add_argument(
-        "--exit-on-failure",
-        "-x",
-        action="store_true",
-        help="Exit the entire process if any package fails",
-    )
-    cmd_install.add_argument(
-        "packages",
-        type=click.Path(dir_okay=False),
+        "metadata",
+        type=PathPath(dir_okay=False),
         help="A file that has one package with "
         "associated version number, one per line",
     )
     cmd_install.add_argument(
         "out",
-        type=click.Path(file_okay=False, dir_okay=True, exists=True),
+        type=PathPath(file_okay=False, dir_okay=True, exists=True),
         help="A directory into which to produce output files",
     )
-    cmd_install.set_defaults(func=install)
+    cmd_install.set_defaults(func=new_definitions)
+
+    cmd_reanalyse = subparsers.add_parser(
+        "reanalyse",
+        help="Re-analyse all tool definitions in a directory using the latest parser. Doesn't look at parent commands since these cannot be re-analysed without rerunning the command.",
+    )
+    cmd_reanalyse.add_argument(
+        "dir",
+        type=PathPath(file_okay=False, dir_okay=True, exists=True),
+        help="The directory to re-analyse",
+    )
+    cmd_reanalyse.add_argument(
+        "--old-meta",
+        type=PathPath(file_okay=True, dir_okay=False, exists=True),
+        help="The metadata file used in the last analysis",
+    )
+    cmd_reanalyse.add_argument(
+        "--new-meta",
+        type=PathPath(file_okay=True, dir_okay=False, exists=True),
+        help="An up-to-date metadata file",
+    )
+    cmd_reanalyse.add_argument(
+        "--processes",
+        "-p",
+        type=int,
+        default=None,
+        help="Use this many processes instead of all the available CPUs",
+    )
+    cmd_reanalyse.add_argument(
+        "--debug",
+        action="store_false",
+        dest="fork",
+        help="Don't fork using multiprocessing, allowing for PDB debugging",
+    )
+    cmd_reanalyse.add_argument(
+        "--max-tasks",
+        "-m",
+        type=int,
+        default=None,
+        help="The number of packages each process will analyse before it is replaced with a fresh worker process",
+    )
+    cmd_reanalyse.set_defaults(func=reanalyse)
 
     cmd_wrappers = subparsers.add_parser(
         "wrappers",
         help="Recursively convert all .yml dumped Commands into tool wrappers",
     )
     cmd_wrappers.add_argument(
-        "command_dir", type=click.Path(dir_okay=True, file_okay=False, exists=True)
+        "command_dir", type=PathPath(dir_okay=True, file_okay=False, exists=True)
     )
     cmd_wrappers.add_argument(
         "--output-dir",
         "-o",
-        type=click.Path(dir_okay=True, file_okay=False, exists=True),
+        type=PathPath(dir_okay=True, file_okay=False, exists=True),
     )
     cmd_wrappers.set_defaults(func=wrappers)
 
