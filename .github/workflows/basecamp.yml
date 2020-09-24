@@ -1,0 +1,56 @@
+# This is the regular build workflow that runs tests and ensures PRs are not breaking things
+name: Basecamp
+
+on:
+  schedule:
+    # Run each monday at 12
+    - cron: "0 12 * * MON"
+  repository_dispatch:
+    # Also run whenever we update aCLImatise
+    types: [aclimatise-update]
+
+jobs:
+  build:
+    container: continuumio/miniconda3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: webfactory/ssh-agent@v0.4.0
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+
+      - name: Apt requirements
+        run: apt-get update && apt-get install build-essential -y
+
+      - name: Install python code
+        run: |
+          pip install -U pip setuptools wheel
+          pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
+          python -m spacy download en
+
+      - name: Update BaseCamp
+        run: |
+          source /root/.bashrc
+          # Check for the latest versions of tools etc
+          aclimatise-automation metadata --test > BaseCamp/new_packages.yml
+          # If the parser is newer, update the definitions
+          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/packages.yml
+          # Analyse new packages and/or versions of packages
+          aclimatise-automation install BaseCamp/new_packages.yml out/ --last-meta BaseCamp/packages.yml
+          # Regenerate all wrappers
+          aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
+        shell: bash
+
+      - name: Commit files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m "Add changes" -a
+          git push origin master
