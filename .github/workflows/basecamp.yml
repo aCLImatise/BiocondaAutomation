@@ -39,15 +39,15 @@ jobs:
         run: |
           source /root/.bashrc
           # Check for the latest versions of tools etc
-          aclimatise-automation metadata --test > BaseCamp/new_packages.yml
+          aclimatise-automation metadata --test > BaseCamp/new_metadata.yml
           # If the parser is newer, update the definitions
-          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/packages.yml
+          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml
           # Analyse new packages and/or versions of packages
-          aclimatise-automation install BaseCamp/new_packages.yml out/ --last-meta BaseCamp/packages.yml
+          aclimatise-automation install BaseCamp/new_metadata.yml out/ --last-meta BaseCamp/metadata.yml
           # Regenerate all wrappers
           aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
           # The new metadata is now the current metadata
-          mv BaseCamp/new_packages.yml BaseCamp/packages.yml
+          mv BaseCamp/new_metadata.yml BaseCamp/metadata.yml
         shell: bash
 
       - name: Commit files
