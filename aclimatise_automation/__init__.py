@@ -170,7 +170,7 @@ def generate_wrapper(
 
     logger.info("Converting...")
     with command.open() as fp:
-        cmd = yaml.load(fp)
+        cmd: Command = yaml.load(fp)
 
     if output_dir:
         output_path = pathlib.Path(output_dir) / command.parent.relative_to(command_dir)
@@ -180,9 +180,23 @@ def generate_wrapper(
     output_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        for subclass in WrapperGenerator.__subclasses__():
-            gen = subclass()
-            exhaust(gen.generate_tree(cmd, output_path))
+        generators = [Gen() for Gen in WrapperGenerator.__subclasses__()]
+        for cmd in cmd.command_tree():
+            if len(cmd.subcommands) > 0:
+                # Since we're dumping directly usable tool definitions, it doesn't make sense to dump the parent
+                # commands like "samtools" rather than "samtools index", so skip them
+                continue
+
+            # Also, if we are dumping, we disconnect each Command from the command tree to simplify the output
+            cmd.parent = None
+            cmd.subcommands = []
+
+            for gen in generators:
+                path = output_path / (cmd.as_filename + gen.suffix)
+                gen.save_to_file(cmd, path)
+                logger.info(
+                    "{} converted to {}".format(" ".join(cmd.command), gen.suffix)
+                )
     except Exception as e:
         logger.error(handle_exception())
 
