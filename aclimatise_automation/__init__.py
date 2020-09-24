@@ -170,7 +170,7 @@ def generate_wrapper(
 
     logger.info("Converting...")
     with command.open() as fp:
-        cmd = yaml.load(fp)
+        cmd: Command = yaml.load(fp)
 
     if output_dir:
         output_path = pathlib.Path(output_dir) / command.parent.relative_to(command_dir)
@@ -194,7 +194,9 @@ def generate_wrapper(
             for gen in generators:
                 path = output_path / (cmd.as_filename + gen.suffix)
                 gen.save_to_file(cmd, path)
-                logger.info("Converted to {}".format(gen.suffix))
+                logger.info(
+                    "{} converted to {}".format(" ".join(cmd.command), gen.suffix)
+                )
     except Exception as e:
         logger.error(handle_exception())
 
