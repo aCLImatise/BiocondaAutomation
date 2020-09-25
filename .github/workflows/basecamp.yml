@@ -39,14 +39,14 @@ jobs:
         run: |
           source /root/.bashrc
           # Check for the latest versions of tools etc
-          aclimatise-automation metadata --test > BaseCamp/new_metadata.yml
+          aclimatise-automation metadata --filter-r > BaseCamp/new_metadata.yml
         shell: bash
 
       - name: Reanalyse Definitions
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
-          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml
+          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
         shell: bash
 
       - name: aCLImatise New Versions

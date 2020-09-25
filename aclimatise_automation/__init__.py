@@ -224,6 +224,7 @@ def wrappers(
             logging_queue=queue,
         )
         pool.map(func, packages)
+    listener.stop()
 
 
 def reanalyse_tool(tool: Path, logging_queue: Queue):
@@ -304,6 +305,7 @@ def new_definitions(
                 out=pathlib.Path(out).resolve(),
                 logging_queue=queue,
             )
+    listener.stop()
 
 
 def reanalyse(
@@ -361,3 +363,4 @@ def reanalyse(
                 file,
                 logging_queue=queue,
             )
+    listener.stop()
