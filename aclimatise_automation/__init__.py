@@ -179,6 +179,16 @@ def generate_wrapper(
 
     output_path.mkdir(parents=True, exist_ok=True)
 
+    # If any of the tool wrappers are newer than the command itself, then we don't need to regenerate them
+    command_modified = command.stat().st_mtime
+    if any(
+        [
+            existing.stat().st_mtime >= command_modified
+            for existing in output_path.iterdir()
+        ]
+    ):
+        return
+
     try:
         generators = [Gen() for Gen in WrapperGenerator.__subclasses__()]
         for cmd in cmd.command_tree():
