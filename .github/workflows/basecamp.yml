@@ -53,7 +53,7 @@ jobs:
           # If the parser is newer, update the definitions
           # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
           cd BaseCamp
-          git add BaseCamp/ToolDefinitions
+          git add ToolDefinitions
           git commit -m "Reanalyse"
         shell: bash
 
@@ -63,7 +63,7 @@ jobs:
           # Analyse new packages and/or versions of packages
           aclimatise-automation install BaseCamp/new_metadata.yml BaseCamp/ToolDefinitions --last-meta BaseCamp/metadata.yml
           cd BaseCamp
-          git add BaseCamp/ToolDefinitions
+          git add ToolDefinitions
           git commit -m "aCLImatise New Packages"
         shell: bash
 
@@ -73,7 +73,7 @@ jobs:
           # Regenerate all wrappers
           aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
           cd BaseCamp
-          git add BaseCamp/ToolWrappers
+          git add ToolWrappers
           git commit -m "Generate Tool Wrappers"
         shell: bash
 
@@ -83,7 +83,7 @@ jobs:
           # The new metadata is now the current metadata
           mv BaseCamp/new_metadata.yml BaseCamp/metadata.yml
           cd BaseCamp
-          git add BaseCamp/metadata.yml
+          git add metadata.yml
           git commit -m "Update metadata file"
         shell: bash
 
