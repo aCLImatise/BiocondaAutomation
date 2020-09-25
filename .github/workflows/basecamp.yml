@@ -46,7 +46,7 @@ jobs:
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
-          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
+          # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
         shell: bash
 
       - name: aCLImatise New Versions
