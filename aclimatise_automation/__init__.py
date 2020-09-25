@@ -179,7 +179,7 @@ def generate_wrapper(
     output_path.mkdir(parents=True, exist_ok=True)
 
     # If any of the tool wrappers are newer than the command itself, then we don't need to regenerate them
-    command_modified = command.stat().st_mtime
+    command_modified = last_git_update(command)
     if any(
         [
             last_git_update(existing) >= command_modified

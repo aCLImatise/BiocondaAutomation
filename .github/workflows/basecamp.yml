@@ -35,6 +35,11 @@ jobs:
           pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
           python -m spacy download en
 
+      - name: Git config
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
       - name: Update metadata
         run: |
           source /root/.bashrc
@@ -47,6 +52,9 @@ jobs:
           source /root/.bashrc
           # If the parser is newer, update the definitions
           # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
+          cd BaseCamp
+          git add BaseCamp/ToolDefinitions
+          git commit -m "Reanalyse"
         shell: bash
 
       - name: aCLImatise New Versions
@@ -54,6 +62,9 @@ jobs:
           source /root/.bashrc
           # Analyse new packages and/or versions of packages
           aclimatise-automation install BaseCamp/new_metadata.yml BaseCamp/ToolDefinitions --last-meta BaseCamp/metadata.yml
+          cd BaseCamp
+          git add BaseCamp/ToolDefinitions
+          git commit -m "aCLImatise New Packages"
         shell: bash
 
       - name: Regenerate Wrappers
@@ -61,6 +72,9 @@ jobs:
           source /root/.bashrc
           # Regenerate all wrappers
           aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
+          cd BaseCamp
+          git add BaseCamp/ToolWrappers
+          git commit -m "Generate Tool Wrappers"
         shell: bash
 
       - name: Move metadata file
@@ -68,13 +82,12 @@ jobs:
           source /root/.bashrc
           # The new metadata is now the current metadata
           mv BaseCamp/new_metadata.yml BaseCamp/metadata.yml
+          cd BaseCamp
+          git add BaseCamp/metadata.yml
+          git commit -m "Update metadata file"
         shell: bash
 
       - name: Commit files
         run: |
           cd BaseCamp
-          git add -A
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git commit -m "Update BaseCamp"
           git push origin master
