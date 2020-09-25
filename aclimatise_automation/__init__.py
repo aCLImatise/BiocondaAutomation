@@ -301,7 +301,9 @@ def new_definitions(
 
     logger.info(
         "There are {} packages in the old metadata and {} in the new. There are {} to process.".format(
-            len(new_meta.packages), len(old_meta.packages), len(to_aclimatise)
+            len(new_meta.packages),
+            len(old_meta.packages) if last_meta else "?",
+            len(to_aclimatise),
         )
     )
 
