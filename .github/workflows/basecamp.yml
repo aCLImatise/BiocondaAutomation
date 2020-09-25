@@ -54,7 +54,7 @@ jobs:
           # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
           cd BaseCamp
           git add ToolDefinitions
-          git commit -m "Reanalyse"
+          git commit -m "Reanalyse" || true
         shell: bash
 
       - name: aCLImatise New Versions
@@ -64,7 +64,7 @@ jobs:
           aclimatise-automation install BaseCamp/new_metadata.yml BaseCamp/ToolDefinitions --last-meta BaseCamp/metadata.yml
           cd BaseCamp
           git add ToolDefinitions
-          git commit -m "aCLImatise New Packages"
+          git commit -m "aCLImatise New Packages" || true
         shell: bash
 
       - name: Regenerate Wrappers
@@ -74,7 +74,7 @@ jobs:
           aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
           cd BaseCamp
           git add ToolWrappers
-          git commit -m "Generate Tool Wrappers"
+          git commit -m "Generate Tool Wrappers" || true
         shell: bash
 
       - name: Move metadata file
@@ -84,7 +84,7 @@ jobs:
           mv BaseCamp/new_metadata.yml BaseCamp/metadata.yml
           cd BaseCamp
           git add metadata.yml
-          git commit -m "Update metadata file"
+          git commit -m "Update metadata file" || true
         shell: bash
 
       - name: Commit files
