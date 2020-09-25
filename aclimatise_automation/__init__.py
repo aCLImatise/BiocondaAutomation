@@ -289,9 +289,16 @@ def new_definitions(
             # We don't have to aclimatise packages we've already done
             to_aclimatise -= set(old_meta.packages)
 
+    logger.info(
+        "There are {} packages in the old metadata and {} in the new. There are {} to process.".format(
+            len(new_meta.packages), len(old_meta.packages), len(to_aclimatise)
+        )
+    )
+
     # Iterate each package in the input file
     if fork:
         with Pool(processes, maxtasksperchild=max_tasks) as pool:
+            logger.info("Forking into {} processes".format(pool._processes))
             func = partial(
                 commands_from_package,
                 out=pathlib.Path(out).resolve(),
