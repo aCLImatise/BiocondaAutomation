@@ -168,7 +168,6 @@ def generate_wrapper(
 
     command = command.resolve()
 
-    logger.info("Converting...")
     with command.open() as fp:
         cmd: Command = yaml.load(fp)
 
@@ -180,14 +179,16 @@ def generate_wrapper(
     output_path.mkdir(parents=True, exist_ok=True)
 
     # If any of the tool wrappers are newer than the command itself, then we don't need to regenerate them
-    command_modified = last_git_update(command)
+    command_modified = command.stat().st_mtime
     if any(
         [
             last_git_update(existing) >= command_modified
             for existing in output_path.iterdir()
         ]
     ):
+        logger.info("Skipping, since the wrappers are up-to-date.")
         return
+    logger.info("There have been changes in the tool definitions. Regenerating...")
 
     try:
         generators = [Gen() for Gen in WrapperGenerator.__subclasses__()]
