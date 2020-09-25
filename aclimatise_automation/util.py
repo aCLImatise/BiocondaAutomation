@@ -21,8 +21,18 @@ from aclimatise.converter.yml import YmlGenerator
 from aclimatise.execution.docker import DockerExecutor
 from aclimatise_automation.yml import yaml
 from docker.models.containers import Container
+from git import Repo
 
 logger = getLogger(__name__)
+
+
+def last_git_update(path: pathlib.Path) -> int:
+    """
+    Returns the last date of update as a unix timestamp, according to a git repo
+    """
+    repo = Repo(path.parent, search_parent_directories=True)
+    commit = next(repo.iter_commits(paths=path))
+    return commit.authored_date
 
 
 def latest_package_version(package: str) -> str:
