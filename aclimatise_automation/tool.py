@@ -11,9 +11,8 @@ from pathlib import Path
 from typing import Collection, Optional
 
 import docker
-from docker.errors import NotFound
-
 from aclimatise import Command, WrapperGenerator, parse_help
+from docker.errors import NotFound
 
 from .metadata import BaseCampMeta
 from .util import *
