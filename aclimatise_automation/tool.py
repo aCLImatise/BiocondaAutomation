@@ -40,14 +40,8 @@ def reanalyse_tool(tool: Path, logging_queue: Queue, wrapper_root: Path = None):
         logger.warning("Has no help text to re-analyse")
         return
 
-    if len(old_cmd.subcommands) > 0:
-        logger.warning(
-            "This tool has subcommands. We can't reanalyse this without re-running it."
-        )
-        return
-
     gen = YmlGenerator()
-    new_cmd = parse_help(cmd=old_cmd.command, text=old_cmd.help_text)
+    new_cmd = old_cmd.reanalyse()
     gen.save_to_file(new_cmd, tool)
 
     if wrapper_root:

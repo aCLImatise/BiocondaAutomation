@@ -6,7 +6,7 @@ setup(
     version="0.0.1",
     install_requires=[
         "click",
-        "aclimatise>=2.0.0",
+        "aclimatise>=2.2.0",
         "ruamel.yaml",
         "packaging",
         "tqdm",
