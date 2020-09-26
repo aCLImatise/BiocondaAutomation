@@ -28,7 +28,7 @@ jobs:
           source /root/.bashrc
           aclimatise-automation metadata --test > packages.yml
           mkdir defs/ wraps/
-          aclimatise-automation install packages.yml defs/ --wrapper-dir wraps/
+          aclimatise-automation install packages.yml defs/ --wrapper-root wraps/
           aclimatise-automation wrappers defs/ --output-dir wraps/
-          aclimatise-automation reanalyse out/ --wrapper-dir wraps/
+          aclimatise-automation reanalyse out/ --wrapper-root wraps/
         shell: bash
