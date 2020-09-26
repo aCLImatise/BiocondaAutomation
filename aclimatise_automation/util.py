@@ -93,7 +93,12 @@ def get_package_binaries(container: Container, package: str, version: str) -> Li
     stdout, stderr = output
 
     # The binaries in a given package are listed in the files key of the metadata file
-    parsed = json.loads(stdout)
+    try:
+        parsed = json.loads(stdout)
+    except:
+        # If the metadata fails to parse, we have to assume there are no binaries
+        return []
+
     paths = [pathlib.Path(f) for f in parsed["files"]]
 
     # Only return binaries, not just any package file. Their actual location is relative to the prefix

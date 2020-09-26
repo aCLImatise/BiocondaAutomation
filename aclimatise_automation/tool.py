@@ -84,7 +84,12 @@ def commands_from_package(
             for img in resp["images"]
             if ("image_type" in img and img["image_type"] == "Docker")
         ],
-        key=lambda image: datetime.fromisoformat(image["updated"].rstrip("Z")),
+        key=lambda image: (
+            # Sort firstly by updated date, and then secondly prioritise quay.io images (since they are the automated
+            # bioconda builds)
+            datetime.fromisoformat(image["updated"].rstrip("Z")),
+            image.get("registry_host").startswith("quay.io"),
+        ),
         reverse=True,
     )
 
