@@ -85,6 +85,7 @@ def get_package_binaries(container: Container, package: str, version: str) -> Li
     """
     Given an already installed package, lists the binaries provided by it
     """
+    logger = getLogger(package)
     code, output = container.exec_run(
         "bash -l -c 'cat /usr/local/conda-meta/{}*.json'".format(package),
         demux=True,
@@ -97,6 +98,9 @@ def get_package_binaries(container: Container, package: str, version: str) -> Li
         parsed = json.loads(stdout)
     except:
         # If the metadata fails to parse, we have to assume there are no binaries
+        logger.warning(
+            "No metadata file could be identified in the container. Aborting."
+        )
         return []
 
     paths = [pathlib.Path(f) for f in parsed["files"]]
