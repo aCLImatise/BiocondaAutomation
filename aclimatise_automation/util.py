@@ -189,6 +189,7 @@ def wrapper_from_command(
     command_path: pathlib.Path,
     command_root: pathlib.Path,
     wrapper_root: pathlib.Path,
+    logger=logger,
 ):
     """
     Given an already generated command, dump the wrappers
@@ -198,15 +199,19 @@ def wrapper_from_command(
     :param wrapper_root:
     :return:
     """
+
     output_path = pathlib.Path(wrapper_root) / command_path.parent.relative_to(
         command_root
     )
+
+    logger.info("Outputting to {}".format(output_path))
 
     output_path.mkdir(parents=True, exist_ok=True)
 
     try:
         generators = [Gen() for Gen in WrapperGenerator.__subclasses__()]
         for cmd in cmd.command_tree():
+            logger.info("Converting {}".format(cmd.as_filename))
             if len(cmd.subcommands) > 0:
                 # Since we're dumping directly usable tool definitions, it doesn't make sense to dump the parent
                 # commands like "samtools" rather than "samtools index", so skip them
@@ -217,7 +222,7 @@ def wrapper_from_command(
             cmd.subcommands = []
 
             for gen in generators:
-                path = executable_dir / (cmd.as_filename + gen.suffix)
+                path = wrapper_root / (cmd.as_filename + gen.suffix)
                 gen.save_to_file(cmd, path)
                 logger.info(
                     "{} converted to {}".format(" ".join(cmd.command), gen.suffix)

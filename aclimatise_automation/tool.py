@@ -56,6 +56,7 @@ def reanalyse_tool(tool: Path, logging_queue: Queue, wrapper_root: Path = None):
             command_path=tool,
             command_root=tool.parent.parent.parent.parent,
             wrapper_root=wrapper_root,
+            logger=logger,
         )
 
 
@@ -190,4 +191,5 @@ def generate_wrapper(
         command_path=command,
         command_root=command_dir,
         wrapper_root=Path(output_dir),
+        logger=logger,
     )
