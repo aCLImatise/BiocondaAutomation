@@ -25,6 +25,7 @@ jobs:
         with:
           repository: aCLImatise/BaseCamp
           path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
 
       - name: Apt requirements
         run: apt-get update && apt-get install build-essential -y
