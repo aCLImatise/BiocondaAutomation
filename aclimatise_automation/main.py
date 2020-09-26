@@ -86,7 +86,7 @@ def get_parser():
     cmd_install.add_argument(
         "--wrapper-root",
         type=PathPath(dir_okay=True, file_okay=False, exists=True),
-        help="If provided, also generate wrapper and output to a subdir within the provided directory"
+        help="If provided, also generate wrapper and output to a subdir within the provided directory",
     )
     cmd_install.add_argument(
         "--processes",
@@ -128,7 +128,7 @@ def get_parser():
     cmd_reanalyse.add_argument(
         "--wrapper-root",
         type=PathPath(dir_okay=True, file_okay=False, exists=True),
-        help="If provided, also generate wrapper and output to a subdir within the provided directory"
+        help="If provided, also generate wrapper and output to a subdir within the provided directory",
     )
     cmd_reanalyse.add_argument(
         "dir",

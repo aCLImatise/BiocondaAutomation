@@ -11,17 +11,26 @@ from pathlib import Path
 from typing import Collection, Optional
 
 import docker
-from aclimatise import Command, WrapperGenerator, parse_help
-from aclimatise_automation.tool import aclimatise_exe, calculate_metadata, generate_wrapper, commands_from_package, reanalyse_tool
 from docker.errors import NotFound
+
+from aclimatise import Command, WrapperGenerator, parse_help
+from aclimatise_automation.tool import (
+    aclimatise_exe,
+    calculate_metadata,
+    commands_from_package,
+    generate_wrapper,
+    reanalyse_tool,
+)
 
 from .metadata import BaseCampMeta
 from .util import *
 
 logger = getLogger()
+
+
 def wrappers(
-        command_dir: os.PathLike,
-        output_dir: Optional[os.PathLike] = None,
+    command_dir: os.PathLike,
+    output_dir: Optional[os.PathLike] = None,
 ):
     """
     Recursively convert all .yml dumped Commands into tool wrappers
@@ -45,14 +54,13 @@ def wrappers(
     listener.stop()
 
 
-
 def new_definitions(
-        metadata: Path,
-        out: Path,
-        processes: int = None,
-        last_meta: Path = None,
-        max_tasks: int = None,
-        fork: bool = True,
+    metadata: Path,
+    out: Path,
+    processes: int = None,
+    last_meta: Path = None,
+    max_tasks: int = None,
+    fork: bool = True,
 ):
     """
     Generates missing tool definitions, using the given metadata
@@ -108,13 +116,13 @@ def new_definitions(
 
 
 def reanalyse(
-        dir: Path,
-        wrapper_dir: Path = None,
-        new_meta: Path = None,
-        old_meta: Path = None,
-        processes: int = None,
-        max_tasks: int = None,
-        fork: bool = True,
+    dir: Path,
+    wrapper_dir: Path = None,
+    new_meta: Path = None,
+    old_meta: Path = None,
+    processes: int = None,
+    max_tasks: int = None,
+    fork: bool = True,
 ):
     """
     Reanalyses old tool definitions using the latest parser. This requires pre-existing ToolDefinition YAML files

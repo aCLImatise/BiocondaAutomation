@@ -11,18 +11,17 @@ from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from itertools import chain
 from logging import getLogger
 from multiprocessing import Lock
-from typing import List, Collection
-
-from packaging.version import parse
+from typing import Collection, List
 
 import requests
-from aclimatise import explore_command, Command, WrapperGenerator
+from docker.models.containers import Container
+from packaging.version import parse
+
+from aclimatise import Command, WrapperGenerator, explore_command
 from aclimatise.converter.yml import YmlGenerator
 from aclimatise.execution.docker import DockerExecutor
-
 from aclimatise_automation.metadata import BaseCampMeta
 from aclimatise_automation.yml import yaml
-from docker.models.containers import Container
 from git import Repo
 
 logger = getLogger(__name__)
@@ -132,7 +131,7 @@ def aclimatise_exe(
     container: Container,
     exe: str,
     out_dir: pathlib.Path,
-    wrapper_root: pathlib.Path  = None
+    wrapper_root: pathlib.Path = None,
 ):
     """
     Given an executable path, aclimatises it, and dumps the results in out_dir
@@ -153,18 +152,18 @@ def aclimatise_exe(
                 cmd=cmd,
                 command_path=path,
                 command_root=out_dir,
-                wrapper_root=wrapper_root
+                wrapper_root=wrapper_root,
             )
     except Exception as e:
         handle_exception()
 
-
     logger.info("Successfully written to YAML".format(exe))
 
+
 def calculate_metadata(
-        test=False,
-        filter_r=False,
-        filter_type: Collection[str] = {"CommandLineTool"},
+    test=False,
+    filter_r=False,
+    filter_type: Collection[str] = {"CommandLineTool"},
 ) -> BaseCampMeta:
     """
     Generates a new metadata file, which is basically a specification for an automation run
@@ -185,7 +184,12 @@ def calculate_metadata(
     )
 
 
-def wrapper_from_command(cmd: Command, command_path: pathlib.Path, command_root:pathlib.Path, wrapper_root : pathlib.Path):
+def wrapper_from_command(
+    cmd: Command,
+    command_path: pathlib.Path,
+    command_root: pathlib.Path,
+    wrapper_root: pathlib.Path,
+):
     """
     Given an already generated command, dump the wrappers
     :param cmd:
@@ -194,7 +198,9 @@ def wrapper_from_command(cmd: Command, command_path: pathlib.Path, command_root:
     :param wrapper_root:
     :return:
     """
-    output_path = pathlib.Path(wrapper_root) / command_path.parent.relative_to(command_root)
+    output_path = pathlib.Path(wrapper_root) / command_path.parent.relative_to(
+        command_root
+    )
 
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -218,4 +224,3 @@ def wrapper_from_command(cmd: Command, command_path: pathlib.Path, command_root:
                 )
     except Exception as e:
         logger.error(handle_exception())
-

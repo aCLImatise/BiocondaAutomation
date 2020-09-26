@@ -11,13 +11,15 @@ from pathlib import Path
 from typing import Collection, Optional
 
 import docker
-from aclimatise import Command, WrapperGenerator, parse_help
 from docker.errors import NotFound
+
+from aclimatise import Command, WrapperGenerator, parse_help
 
 from .metadata import BaseCampMeta
 from .util import *
 
 logger = getLogger()
+
 
 def reanalyse_tool(tool: Path, logging_queue: Queue, wrapper_root: Path = None):
     """
@@ -51,19 +53,15 @@ def reanalyse_tool(tool: Path, logging_queue: Queue, wrapper_root: Path = None):
 
     if wrapper_root:
         wrapper_from_command(
-        cmd=new_cmd,
-        command_path=tool,
-        command_root=tool.parent.parent.parent.parent,
-        wrapper_root=wrapper_root
-    )
-
+            cmd=new_cmd,
+            command_path=tool,
+            command_root=tool.parent.parent.parent.parent,
+            wrapper_root=wrapper_root,
+        )
 
 
 def commands_from_package(
-        line: str,
-        out: pathlib.Path,
-        logging_queue: Queue,
-        wrapper_root: Path = None
+    line: str, out: pathlib.Path, logging_queue: Queue, wrapper_root: Path = None
 ):
     """
     Given a package name, install it in an isolated environment, and aclimatise all package binaries
@@ -149,10 +147,7 @@ def commands_from_package(
             )
         for exe in new_exes:
             aclimatise_exe(
-                container,
-                exe,
-                out_dir=out_subdir,
-                wrapper_root=wrapper_root
+                container, exe, out_dir=out_subdir, wrapper_root=wrapper_root
             )
 
     except Exception as e:
@@ -170,13 +165,11 @@ def commands_from_package(
             container.client.images.remove(container.image.id, force=True)
 
 
-
-
 def generate_wrapper(
-        command: pathlib.Path,
-        command_dir: pathlib.Path,
-        logging_queue: Queue,
-        output_dir: Optional[os.PathLike] = None,
+    command: pathlib.Path,
+    command_dir: pathlib.Path,
+    logging_queue: Queue,
+    output_dir: Optional[os.PathLike] = None,
 ):
     """
     Recursively convert all .yml dumped Commands into tool wrappers
@@ -197,6 +190,5 @@ def generate_wrapper(
         cmd=cmd,
         command_path=command,
         command_root=command_dir,
-        wrapper_root=Path(output_dir)
+        wrapper_root=Path(output_dir),
     )
-
