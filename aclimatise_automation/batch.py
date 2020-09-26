@@ -61,6 +61,7 @@ def new_definitions(
     last_meta: Path = None,
     max_tasks: int = None,
     fork: bool = True,
+    wrapper_root: Path = None,
 ):
     """
     Generates missing tool definitions, using the given metadata
@@ -103,6 +104,7 @@ def new_definitions(
                 commands_from_package,
                 out=pathlib.Path(out).resolve(),
                 logging_queue=queue,
+                wrapper_root=wrapper_root
             )
             pool.map(func, to_aclimatise)
     else:
@@ -111,13 +113,14 @@ def new_definitions(
                 line=line,
                 out=pathlib.Path(out).resolve(),
                 logging_queue=queue,
+                wrapper_root=wrapper_root
             )
     listener.stop()
 
 
 def reanalyse(
     dir: Path,
-    wrapper_dir: Path = None,
+    wrapper_root: Path = None,
     new_meta: Path = None,
     old_meta: Path = None,
     processes: int = None,
@@ -127,7 +130,7 @@ def reanalyse(
     """
     Reanalyses old tool definitions using the latest parser. This requires pre-existing ToolDefinition YAML files
     :param new_meta: The state to upgrade the database to
-    :param wrapper_dir: If provided, also generate wrappers from the re-analysed tools,
+    :param wrapper_root: If provided, also generate wrappers from the re-analysed tools,
         dump the output into the same folder hierarchy within this directory
     :param dir: The directory containing existing tool definitions
     :param processes: Maximum number of threads to use
@@ -164,6 +167,7 @@ def reanalyse(
         with Pool(processes, maxtasksperchild=max_tasks) as pool:
             func = partial(
                 reanalyse_tool,
+                wrapper_root=wrapper_root,
                 logging_queue=queue,
             )
             pool.map(func, to_reanalyse)
@@ -171,6 +175,7 @@ def reanalyse(
         for file in to_reanalyse:
             reanalyse_tool(
                 file,
+                wrapper_root=wrapper_root,
                 logging_queue=queue,
             )
     listener.stop()
