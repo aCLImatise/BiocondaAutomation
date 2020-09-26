@@ -52,7 +52,7 @@ jobs:
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
-          # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
+          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
           cd BaseCamp
           git add ToolDefinitions
           git commit -m "Reanalyse" || true
