@@ -9,7 +9,7 @@ from pathlib import Path
 
 import click
 
-from aclimatise_automation import (
+from aclimatise_automation.batch import (
     calculate_metadata,
     new_definitions,
     reanalyse,
@@ -84,6 +84,11 @@ def get_parser():
         help="Path to a previous output from the meta command, to ensure we only aclimatise new tool versions",
     )
     cmd_install.add_argument(
+        "--wrapper-root",
+        type=PathPath(dir_okay=True, file_okay=False, exists=True),
+        help="If provided, also generate wrapper and output to a subdir within the provided directory",
+    )
+    cmd_install.add_argument(
         "--processes",
         "-p",
         type=int,
@@ -119,6 +124,11 @@ def get_parser():
     cmd_reanalyse = subparsers.add_parser(
         "reanalyse",
         help="Re-analyse all tool definitions in a directory using the latest parser. Doesn't look at parent commands since these cannot be re-analysed without rerunning the command.",
+    )
+    cmd_reanalyse.add_argument(
+        "--wrapper-root",
+        type=PathPath(dir_okay=True, file_okay=False, exists=True),
+        help="If provided, also generate wrapper and output to a subdir within the provided directory",
     )
     cmd_reanalyse.add_argument(
         "dir",
