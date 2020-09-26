@@ -104,7 +104,7 @@ def new_definitions(
                 commands_from_package,
                 out=pathlib.Path(out).resolve(),
                 logging_queue=queue,
-                wrapper_root=wrapper_root
+                wrapper_root=wrapper_root,
             )
             pool.map(func, to_aclimatise)
     else:
@@ -113,7 +113,7 @@ def new_definitions(
                 line=line,
                 out=pathlib.Path(out).resolve(),
                 logging_queue=queue,
-                wrapper_root=wrapper_root
+                wrapper_root=wrapper_root,
             )
     listener.stop()
 
