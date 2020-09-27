@@ -150,7 +150,7 @@ def aclimatise_exe(
             wrapper_from_command(
                 cmd=cmd,
                 command_path=path,
-                command_root=out_dir,
+                command_root=path.parent.parent.parent,
                 wrapper_root=wrapper_root,
             )
     except Exception as e:
@@ -203,7 +203,7 @@ def wrapper_from_command(
         command_root
     )
 
-    logger.info("Outputting to {}".format(output_path))
+    logger.info("Outputting wrappers to {}".format(output_path))
 
     output_path.mkdir(parents=True, exist_ok=True)
 

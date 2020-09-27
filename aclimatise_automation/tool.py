@@ -48,7 +48,7 @@ def reanalyse_tool(tool: Path, logging_queue: Queue, wrapper_root: Path = None):
         wrapper_from_command(
             cmd=new_cmd,
             command_path=tool,
-            command_root=tool.parent.parent.parent.parent,
+            command_root=tool.parent.parent.parent,
             wrapper_root=wrapper_root,
             logger=logger,
         )
