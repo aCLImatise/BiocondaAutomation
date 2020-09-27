@@ -12,7 +12,6 @@ setup(
         "tqdm",
         "requests",
         "docker",
-        "gitpython",
     ],
     extras_require={
         "dev": ["pytest", "pre-commit"],
