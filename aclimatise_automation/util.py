@@ -231,7 +231,7 @@ def wrapper_from_command(
             cmd.subcommands = []
 
             for gen in generators:
-                path = wrapper_root / (cmd.as_filename + gen.suffix)
+                path = output_path / (cmd.as_filename + gen.suffix)
                 gen.save_to_file(cmd, path)
                 logger.info(
                     "{} converted to {}".format(" ".join(cmd.command), gen.suffix)
