@@ -12,6 +12,7 @@ from itertools import chain
 from logging import getLogger
 from multiprocessing import Lock
 from typing import Collection, List
+from conda.cli.python_api import run_command
 
 import requests
 from aclimatise import Command, WrapperGenerator, explore_command
@@ -35,25 +36,45 @@ def latest_package_version(package: str) -> str:
 
 
 def latest_biocontainers(filter_r: bool, filter_type: List[str]) -> List[str]:
+    """
+    Returns a list of all the packages in bioconda at their latest versions, represented as {package}={version} strings
+    """
     images = set()
-    for package in requests.get(
-        "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
-        params=dict(toolClass="Docker", limit=10000),
-    ).json():
+    ret = run_command('search', '--channel', 'bioconda', '--json')
+    for pname, details in json.loads(ret[0]).items():
         if filter_r and (
-            package["name"].startswith("r-")
-            or package["name"].startswith("bioconductor-")
+                pname.startswith("r-")
+                or pname.startswith("bioconductor-")
         ):
             continue
 
         # Only consider tools of the chosen type
-        if len(filter_type) > 0 and package["toolclass"]["name"] not in filter_type:
+        if len(filter_type) > 0 and details["toolclass"]["name"] not in filter_type:
             continue
 
         latest_version = max(
-            package["versions"], key=lambda v: parse(v["meta_version"])
+            details["versions"], key=lambda v: parse(v["meta_version"])
         )
-        images.add("{}={}".format(package["name"], latest_version["meta_version"]))
+        images.add("{}={}".format(pname, latest_version["meta_version"]))
+
+    # for package in requests.get(
+    #     "https://api.biocontainers.pro/ga4gh/trs/v2/tools",
+    #     params=dict(toolClass="Docker", limit=10000),
+    # ).json():
+    #     if filter_r and (
+    #         package["name"].startswith("r-")
+    #         or package["name"].startswith("bioconductor-")
+    #     ):
+    #         continue
+    #
+    #     # Only consider tools of the chosen type
+    #     if len(filter_type) > 0 and package["toolclass"]["name"] not in filter_type:
+    #         continue
+    #
+    #     latest_version = max(
+    #         package["versions"], key=lambda v: parse(v["meta_version"])
+    #     )
+    #     images.add("{}={}".format(package["name"], latest_version["meta_version"]))
     return list(images)
 
 
