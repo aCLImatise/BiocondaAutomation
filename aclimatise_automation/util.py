@@ -11,28 +11,19 @@ from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from itertools import chain
 from logging import getLogger
 from multiprocessing import Lock
-from typing import List
-
-from packaging.version import parse
+from typing import Collection, List
 
 import requests
-from aclimatise import explore_command
+from docker.models.containers import Container
+from packaging.version import parse
+
+from aclimatise import Command, WrapperGenerator, explore_command
 from aclimatise.converter.yml import YmlGenerator
 from aclimatise.execution.docker import DockerExecutor
+from aclimatise_automation.metadata import BaseCampMeta
 from aclimatise_automation.yml import yaml
-from docker.models.containers import Container
-from git import Repo
 
 logger = getLogger(__name__)
-
-
-def last_git_update(path: pathlib.Path) -> int:
-    """
-    Returns the last date of update as a unix timestamp, according to a git repo
-    """
-    repo = Repo(path.parent, search_parent_directories=True)
-    commit = next(repo.iter_commits(paths=path))
-    return commit.authored_date
 
 
 def latest_package_version(package: str) -> str:
@@ -84,6 +75,7 @@ def get_package_binaries(container: Container, package: str, version: str) -> Li
     """
     Given an already installed package, lists the binaries provided by it
     """
+    logger = getLogger(package)
     code, output = container.exec_run(
         "bash -l -c 'cat /usr/local/conda-meta/{}*.json'".format(package),
         demux=True,
@@ -92,7 +84,15 @@ def get_package_binaries(container: Container, package: str, version: str) -> Li
     stdout, stderr = output
 
     # The binaries in a given package are listed in the files key of the metadata file
-    parsed = json.loads(stdout)
+    try:
+        parsed = json.loads(stdout)
+    except:
+        # If the metadata fails to parse, we have to assume there are no binaries
+        logger.warning(
+            "No metadata file could be identified in the container. Aborting."
+        )
+        return []
+
     paths = [pathlib.Path(f) for f in parsed["files"]]
 
     # Only return binaries, not just any package file. Their actual location is relative to the prefix
@@ -130,6 +130,7 @@ def aclimatise_exe(
     container: Container,
     exe: str,
     out_dir: pathlib.Path,
+    wrapper_root: pathlib.Path = None,
 ):
     """
     Given an executable path, aclimatises it, and dumps the results in out_dir
@@ -144,7 +145,86 @@ def aclimatise_exe(
         # Rather than writing out the whole tree, which has redundant information, we instead take the top level command
         # which contains the entire tree, and serialize that
         gen.save_to_file(cmd, path)
+
+        if wrapper_root:
+            wrapper_from_command(
+                cmd=cmd,
+                command_path=path,
+                command_root=path.parent.parent.parent,
+                wrapper_root=wrapper_root,
+            )
     except Exception as e:
         handle_exception()
 
     logger.info("Successfully written to YAML".format(exe))
+
+
+def calculate_metadata(
+    test=False,
+    filter_r=False,
+    filter_type: Collection[str] = {"CommandLineTool"},
+) -> BaseCampMeta:
+    """
+    Generates a new metadata file, which is basically a specification for an automation run
+    :param test: If we're in test mode
+    :param filter_r: If true, filter out R and bioconductor packages
+    :param filter_type: A list of toolClasses strings to select, or "none" to disable filtering
+    :return:
+    """
+
+    # The package names are keys to the output dict
+    if test:
+        images = ["bwa=0.7.17"]
+    else:
+        images = latest_biocontainers(filter_r=filter_r, filter_type=filter_type)
+
+    return BaseCampMeta(
+        packages=images, aclimatise_version=latest_package_version("aclimatise")
+    )
+
+
+def wrapper_from_command(
+    cmd: Command,
+    command_path: pathlib.Path,
+    command_root: pathlib.Path,
+    wrapper_root: pathlib.Path,
+    logger=logger,
+):
+    """
+    Given an already generated command, dump the wrappers
+    :param cmd:
+    :param command_path:
+    :param command_root:
+    :param wrapper_root:
+    :return:
+    """
+
+    output_path = pathlib.Path(wrapper_root) / command_path.parent.relative_to(
+        command_root
+    )
+
+    logger.info("Outputting wrappers to {}".format(output_path))
+
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        generators = [Gen() for Gen in WrapperGenerator.__subclasses__()]
+        for cmd in cmd.command_tree():
+            logger.info("Converting {}".format(cmd.as_filename))
+            if len(cmd.subcommands) > 0:
+                # Since we're dumping directly usable tool definitions, it doesn't make sense to dump the parent
+                # commands like "samtools" rather than "samtools index", so skip them
+                continue
+
+            # Also, if we are dumping, we disconnect each Command from the command tree to simplify the output
+            cmd.parent = None
+            cmd.subcommands = []
+
+            for gen in generators:
+                path = output_path / (cmd.as_filename + gen.suffix)
+                gen.save_to_file(cmd, path)
+                logger.info(
+                    "{} converted to {}".format(" ".join(cmd.command), gen.suffix)
+                )
+    except Exception as e:
+        logger.error(handle_exception())
