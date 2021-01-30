@@ -21,7 +21,7 @@ jobs:
           pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
           python -m spacy download en
 
-      - uses: pre-commit/action@v1.0.1
+      - uses: pre-commit/action@v2.0.0
 
       - name: Test CLI
         run: |
