@@ -25,6 +25,7 @@ jobs:
         with:
           repository: aCLImatise/BaseCamp
           path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
 
       - name: Apt requirements
         run: apt-get update && apt-get install build-essential -y
@@ -51,9 +52,9 @@ jobs:
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
-          # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml
+          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
           cd BaseCamp
-          git add ToolDefinitions
+          git add ToolDefinitions ToolWrappers
           git commit -m "Reanalyse" || true
         shell: bash
 
@@ -61,20 +62,10 @@ jobs:
         run: |
           source /root/.bashrc
           # Analyse new packages and/or versions of packages
-          aclimatise-automation install BaseCamp/new_metadata.yml BaseCamp/ToolDefinitions --last-meta BaseCamp/metadata.yml
+          aclimatise-automation install BaseCamp/new_metadata.yml BaseCamp/ToolDefinitions --last-meta BaseCamp/metadata.yml --wrapper-root BaseCamp/ToolWrappers
           cd BaseCamp
-          git add ToolDefinitions
+          git add ToolDefinitions ToolWrappers
           git commit -m "aCLImatise New Packages" || true
-        shell: bash
-
-      - name: Regenerate Wrappers
-        run: |
-          source /root/.bashrc
-          # Regenerate all wrappers
-          aclimatise-automation wrappers BaseCamp/ToolDefinitions -o BaseCamp/ToolWrappers
-          cd BaseCamp
-          git add ToolWrappers
-          git commit -m "Generate Tool Wrappers" || true
         shell: bash
 
       - name: Move metadata file

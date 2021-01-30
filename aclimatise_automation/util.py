@@ -14,12 +14,12 @@ from multiprocessing import Lock
 from typing import Collection, List
 
 import requests
-from docker.models.containers import Container
-from packaging.version import parse
-
 from aclimatise import Command, WrapperGenerator, explore_command
 from aclimatise.converter.yml import YmlGenerator
 from aclimatise.execution.docker import DockerExecutor
+from docker.models.containers import Container
+from packaging.version import parse
+
 from aclimatise_automation.metadata import BaseCampMeta
 from aclimatise_automation.yml import yaml
 
