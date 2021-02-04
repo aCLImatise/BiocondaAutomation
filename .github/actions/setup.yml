@@ -1,0 +1,32 @@
+name: 'Base Camp setup'
+description: 'Run before any of the basecamp actions'
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v2
+
+    - uses: webfactory/ssh-agent@v0.4.0
+      name: Permission to push to BaseCamp
+      with:
+        ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+    - uses: actions/checkout@v2
+      with:
+        repository: aCLImatise/BaseCamp
+        path: BaseCamp
+        ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
+    - name: Apt requirements
+      run: apt-get update && apt-get install build-essential -y
+
+    - name: Install python code
+      run: |
+        pip install -U pip setuptools wheel
+        pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
+        python -m spacy download en
+
+    - name: Git config
+      run: |
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+

@@ -10,18 +10,8 @@ jobs:
     container: continuumio/miniconda3
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Apt requirements
-        run: apt-get update && apt-get install build-essential -y
-
-      - name: Install python code
-        run: |
-          pip install -U pip setuptools wheel
-          pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
-          python -m spacy download en
-
-      - uses: pre-commit/action@v1.0.1
+      - uses: ./.github/actions/setup
+        name: Setup
 
       - name: Test CLI
         run: |
