@@ -16,12 +16,14 @@ jobs:
     steps:
       - uses: ./.github/actions/setup
         name: Setup
+
       - name: Update metadata
         run: |
           source /root/.bashrc
           # Check for the latest versions of tools etc
           aclimatise-automation metadata --filter-r > BaseCamp/new_metadata.yml
         shell: bash
+
       - name: Upload metadata
         uses: actions/upload-artifact@v2
         with:
