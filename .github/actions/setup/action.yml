@@ -3,8 +3,6 @@ description: 'Run before any of the basecamp actions'
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v2
-
     - uses: webfactory/ssh-agent@v0.4.1
       name: Permission to push to BaseCamp
       with:
