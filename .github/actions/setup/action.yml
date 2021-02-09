@@ -1,5 +1,5 @@
-name: 'Base Camp setup'
-description: 'Run before any of the basecamp actions'
+name: "Base Camp setup"
+description: "Run before any of the basecamp actions"
 runs:
   using: "composite"
   steps:
@@ -21,4 +21,3 @@ runs:
         git config --global user.email "action@github.com"
         git config --global user.name "GitHub Action"
       shell: bash
-
