@@ -12,6 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: webfactory/ssh-agent@v0.4.1
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
       - uses: ./.github/actions/setup
         name: Setup
 

@@ -16,6 +16,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: webfactory/ssh-agent@v0.4.1
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
       - uses: ./.github/actions/setup
         name: Setup
 
@@ -36,15 +47,31 @@ jobs:
     container: continuumio/miniconda3
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
+      - uses: webfactory/ssh-agent@v0.4.1
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
       - uses: ./.github/actions/setup
         name: Setup
+
       - uses: actions/download-artifact@v2
+
       - name: Reanalyse Definitions
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
           aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
         shell: bash
+
       - name: Upload reanalysis
         uses: actions/upload-artifact@v2
         with:
@@ -57,9 +84,24 @@ jobs:
     container: continuumio/miniconda3
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
+      - uses: webfactory/ssh-agent@v0.4.1
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
       - uses: ./.github/actions/setup
         name: Setup
+
       - uses: actions/download-artifact@v2
+
       - name: aCLImatise New Versions
         run: |
           source /root/.bashrc
