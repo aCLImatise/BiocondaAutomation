@@ -111,8 +111,7 @@ jobs:
       - name: Move artifacts
         run: |
           mv metadata/new_metadata.yml BaseCamp/new_metadata.yml
-          tar -xzf reanalysis/reanalysis.tar.gz
-          rsync reanalysis BaseCamp
+          tar -xzf reanalysis/reanalysis.tar.gz -C BaseCamp
 
       - name: aCLImatise New Versions
         run: |
