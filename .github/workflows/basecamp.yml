@@ -34,7 +34,7 @@ jobs:
         run: |
           source /root/.bashrc
           # Check for the latest versions of tools etc
-          aclimatise-automation metadata --test --filter-r > BaseCamp/new_metadata.yml
+          aclimatise-automation metadata --filter-r > BaseCamp/new_metadata.yml
         shell: bash
 
       - name: Upload metadata
@@ -74,7 +74,7 @@ jobs:
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
-          # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
+          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
           tar -czf reanalysis.tar.gz -C BaseCamp/ ToolWrappers/ ToolDefinitions
         shell: bash
 
@@ -136,5 +136,4 @@ jobs:
       - name: Commit files
         run: |
           cd BaseCamp
-
-#          git push origin master
+          git push origin master
