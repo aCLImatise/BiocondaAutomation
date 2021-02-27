@@ -74,7 +74,8 @@ jobs:
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
-        #          aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
+          # aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
+          tar -czf reanalysis.tar.gz -C BaseCamp/ ToolWrappers/ ToolDefinitions
         shell: bash
 
       - name: Upload reanalysis
@@ -82,8 +83,7 @@ jobs:
         with:
           name: reanalysis
           path: |
-            BaseCamp/ToolDefinitions
-            BaseCamp/ToolWrappers
+            BaseCamp/reanalysis.tar.gz
 
   new_tools:
     needs: [metadata, reanalyse]
@@ -111,6 +111,7 @@ jobs:
       - name: Move artifacts
         run: |
           mv metadata/new_metadata.yml BaseCamp/new_metadata.yml
+          tar -xzf reanalysis/reanalysis.tar.gz
           rsync reanalysis BaseCamp
 
       - name: aCLImatise New Versions
