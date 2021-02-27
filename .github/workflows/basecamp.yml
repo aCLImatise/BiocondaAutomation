@@ -83,7 +83,7 @@ jobs:
         with:
           name: reanalysis
           path: |
-            BaseCamp/reanalysis.tar.gz
+            reanalysis.tar.gz
 
   new_tools:
     needs: [metadata, reanalyse]
