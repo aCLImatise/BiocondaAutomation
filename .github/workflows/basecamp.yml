@@ -66,6 +66,11 @@ jobs:
 
       - uses: actions/download-artifact@v2
 
+      - name: Move artifacts
+        run: |
+          ls metadata
+          mv metadata/new_metadata.yml BaseCamp/new_metadata.yml
+
       - name: Reanalyse Definitions
         run: |
           source /root/.bashrc
