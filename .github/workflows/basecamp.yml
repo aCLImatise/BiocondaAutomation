@@ -34,7 +34,7 @@ jobs:
         run: |
           source /root/.bashrc
           # Check for the latest versions of tools etc
-          aclimatise-automation metadata --filter-r > BaseCamp/new_metadata.yml
+          aclimatise-automation metadata --test --filter-r > BaseCamp/new_metadata.yml
         shell: bash
 
       - name: Upload metadata
@@ -68,7 +68,6 @@ jobs:
 
       - name: Move artifacts
         run: |
-          ls metadata
           mv metadata/new_metadata.yml BaseCamp/new_metadata.yml
 
       - name: Reanalyse Definitions
@@ -108,6 +107,11 @@ jobs:
         name: Setup
 
       - uses: actions/download-artifact@v2
+
+      - name: Move artifacts
+        run: |
+          mv metadata/new_metadata.yml BaseCamp/new_metadata.yml
+          rsync reanalysis BaseCamp
 
       - name: aCLImatise New Versions
         run: |
