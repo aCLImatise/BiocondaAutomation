@@ -44,6 +44,7 @@ jobs:
           path: BaseCamp/new_metadata.yml
 
   reanalyse:
+    needs: metadata
     container: continuumio/miniconda3
     runs-on: ubuntu-latest
     steps:
@@ -81,6 +82,7 @@ jobs:
             BaseCamp/ToolWrappers
 
   new_tools:
+    needs: [metadata, reanalyse]
     container: continuumio/miniconda3
     runs-on: ubuntu-latest
     steps:
