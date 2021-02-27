@@ -10,7 +10,7 @@ on:
     types: [aclimatise-update]
 
 jobs:
-  build:
+  metadata:
     container: continuumio/miniconda3
     runs-on: ubuntu-latest
     steps:
@@ -27,19 +27,8 @@ jobs:
           path: BaseCamp
           ssh-key: ${{ secrets.BASECAMPDEPLOY }}
 
-      - name: Apt requirements
-        run: apt-get update && apt-get install build-essential -y
-
-      - name: Install python code
-        run: |
-          pip install -U pip setuptools wheel
-          pip install -U .[dev] --ignore-installed --use-feature=2020-resolver
-          python -m spacy download en
-
-      - name: Git config
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
+      - uses: ./.github/actions/setup
+        name: Setup
 
       - name: Update metadata
         run: |
@@ -48,15 +37,70 @@ jobs:
           aclimatise-automation metadata --filter-r > BaseCamp/new_metadata.yml
         shell: bash
 
+      - name: Upload metadata
+        uses: actions/upload-artifact@v2
+        with:
+          name: metadata
+          path: BaseCamp/new_metadata.yml
+
+  reanalyse:
+    container: continuumio/miniconda3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: webfactory/ssh-agent@v0.4.1
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: ./.github/actions/setup
+        name: Setup
+
+      - uses: actions/download-artifact@v2
+
       - name: Reanalyse Definitions
         run: |
           source /root/.bashrc
           # If the parser is newer, update the definitions
           aclimatise-automation reanalyse BaseCamp/ToolDefinitions --old-meta BaseCamp/metadata.yml --new-meta BaseCamp/new_metadata.yml --wrapper-root BaseCamp/ToolWrappers
-          cd BaseCamp
-          git add ToolDefinitions ToolWrappers
-          git commit -m "Reanalyse" || true
         shell: bash
+
+      - name: Upload reanalysis
+        uses: actions/upload-artifact@v2
+        with:
+          name: reanalysis
+          path: |
+            BaseCamp/ToolDefinitions
+            BaseCamp/ToolWrappers
+
+  new_tools:
+    container: continuumio/miniconda3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: webfactory/ssh-agent@v0.4.1
+        name: Permission to push to BaseCamp
+        with:
+          ssh-private-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: aCLImatise/BaseCamp
+          path: BaseCamp
+          ssh-key: ${{ secrets.BASECAMPDEPLOY }}
+
+      - uses: ./.github/actions/setup
+        name: Setup
+
+      - uses: actions/download-artifact@v2
 
       - name: aCLImatise New Versions
         run: |
@@ -65,7 +109,7 @@ jobs:
           aclimatise-automation install BaseCamp/new_metadata.yml BaseCamp/ToolDefinitions --last-meta BaseCamp/metadata.yml --wrapper-root BaseCamp/ToolWrappers
           cd BaseCamp
           git add ToolDefinitions ToolWrappers
-          git commit -m "aCLImatise New Packages" || true
+          git commit -m "aCLImatise new packages, reanalyse old packages" || true
         shell: bash
 
       - name: Move metadata file
