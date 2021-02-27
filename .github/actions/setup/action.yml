@@ -6,7 +6,7 @@ runs:
     # Ideally we would add the BaseCamp checkout, and the SSH agent setup here, but it's easier to use existing
     # actions for this. Once `uses:` is supported in composite actions, they will be moved here.
     - name: Apt requirements
-      run: apt-get update && apt-get install build-essential -y
+      run: apt-get update && apt-get install build-essential rsync -y
       shell: bash
 
     - name: Install python code
